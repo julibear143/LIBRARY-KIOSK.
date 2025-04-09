@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books in {{ classification }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+      <style>
+        .card {
+            display: flex; /* Make the card a flex container */
+            margin-bottom: 10px; /* Reduce vertical spacing between cards */
+            border: 1px solid #ddd; /* Optional: Add a border */
+            border-radius: 5px; /* Optional: Add rounded corners */
+            overflow: hidden; /* Optional: Hide overflow */
+        }
+
+        .card-img {
+            width: 150px; /* Set a fixed width for the image */
+            height: 200px; /* Set a fixed height for the image */
+            object-fit: cover; /* Ensure the image covers the area without distortion */
+        }
+
+        .card-body {
+            display: flex; /* Make the card body a flex container */
+            flex-direction: column; /* Stack children vertically */
+            justify-content: space-between; /* Distribute space evenly */
+            padding: 10px; /* Add padding inside the card body */
+            flex-grow: 1; /* Allow the card body to grow and fill the available space */
+        }
+
+        .card-title {
+            font-size: 1rem; /* Adjust the font size for the title */
+        }
+
+        .card-text {
+            font-size: 0.75rem; /* Adjust the font size for the text */
+        }
+
+        .btn {
+            font-size: 0.75rem; /* Adjust the font size for buttons */
+        }
+
+        #bookList .col-md-3 {
+            padding: 5px; /* Reduce horizontal padding between columns */
+        }
+    </style>
+
+</head>
+<body>
+    <div class="container">
+        <h1>Books in {{ classification }}</h1>
+        <div class="row">
+            {% for book in books %}
+            <div class="col-md-3">
+                <div class="card">
+                    <img src="{{ book.image_url }}" class="card-img-top" alt="{{ book.title }}" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title"><a href="/book/{{ book.id }}">{{ book.title }}</a></h5>
+                        <p class="card-text">Author: {{ book.author }}</p>
+                        <p class="card-text">ISBN: {{ book.isbn }}</p>
+                        <p class="card-text">Publisher: {{ book.publisher }}</p>
+                        <p class="card-text">Publication Year: {{ book.publication_date }}</p>
+                        <p class="card-text">Edition: {{ book.edition }}</p>
+                        <p class="card-text">Barcode: {{ book.barcode }}</p>
+                        <p class="card-text">Status: Available</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <a href="/admin_dashboard" class="btn btn-primary">Back to Dashboard</a>
+    </div>
+</body>
+</html>

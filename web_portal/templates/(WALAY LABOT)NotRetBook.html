@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unreturned Books</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Unreturned Books</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Book Title</th>
+                    <th>Author</th>
+                    <th>ISBN</th>
+                    <th>Date Borrowed</th>
+                    <th>Due Date</th>
+                    <th>Penalty (if late)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="unreturnedBooksTableBody">
+                <!-- Unreturned books will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+       <script>
+    async function loadUnreturnedBooks() {
+        const response = await fetch('/get_unreturned_books');
+        const books = await response.json();
+
+        const tableBody = document.getElementById('unreturnedBooksTableBody');
+        tableBody.innerHTML = ''; // Clear previous content
+
+        books.forEach(book => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${book.title}</td>
+                <td>${book.author}</td>
+                <td>${book.isbn}</td>
+                <td>${new Date(book.borrow_date).toLocaleDateString()}</td>
+                <td>${new Date(book.due_date).toLocaleDateString()}</td>
+                <td>₱${book.penalty}</td>
+                <td><button class="btn btn-danger" onclick="returnBook(${book.id})">Return</button></td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Load unreturned books on page load
+    document.addEventListener('DOMContentLoaded', loadUnreturnedBooks);
+</script>
+        function calculatePenalty(dueDate) {
+            const today = new Date();
+            const due = new Date(dueDate);
+            const penaltyRate = 1; // Example penalty rate per day
+            const daysOverdue = Math.max(0, Math.ceil((today - due) / (1000 * 60 * 60 * 24))); // Calculate overdue days
+            return daysOverdue * penaltyRate; // Calculate total penalty
+        }
+
+        async function returnBook(bookId) {
+            const response = await fetch('/return_book', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ book_id: bookId })
+            });
+
+            if (response.ok) {
+                alert('Book returned successfully!');
+                loadUnreturnedBooks(); // Refresh the list
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Error returning book.');
+            }
+        }
+
+        // Load unreturned books on page load
+        document.addEventListener('DOMContentLoaded', loadUnreturnedBooks);
+    </script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt</title>
+    <style>
+        /* Receipt-specific styling */
+        .receipt-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 215px; /* 57mm in pixels */
+            max-width: 215px; /* Ensure it doesn't exceed the paper width */
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .receipt-popup h3 {
+            margin: 0 0 10px;
+            font-size: 14px; /* Adjusted for small paper */
+            color: #2c3e50;
+        }
+
+        .receipt-popup p {
+            margin: 5px 0;
+            font-size: 10px; /* Adjusted for small paper */
+            color: #34495e;
+            text-align: left;
+        }
+
+        .receipt-popup .receipt-header {
+            font-size: 12px; /* Adjusted for small paper */
+            font-weight: bold;
+            color: #2980b9;
+            margin-bottom: 10px;
+        }
+
+        .receipt-popup .receipt-book-details {
+            background: #f9f9f9;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .receipt-popup .receipt-book-details h4 {
+            margin: 0 0 8px;
+            font-size: 12px; /* Adjusted for small paper */
+            color: #2c3e50;
+        }
+
+        .receipt-popup .receipt-book-details p {
+            margin: 4px 0;
+            font-size: 10px; /* Adjusted for small paper */
+            color: #34495e;
+        }
+
+        .receipt-popup .consequences {
+            background: #f9f9f9;
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .receipt-popup .consequences h4 {
+            margin: 0 0 8px;
+            font-size: 12px; /* Adjusted for small paper */
+            color: #2c3e50;
+        }
+
+        .receipt-popup .consequences p {
+            margin: 4px 0;
+            font-size: 10px; /* Adjusted for small paper */
+            color: #34495e;
+        }
+
+        .receipt-popup button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #1abc9c;
+            border: none;
+            color: white;
+            font-size: 10px; /* Adjusted for small paper */
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .receipt-popup button:hover {
+            background: #16a085;
+        }
+
+        .receipt-popup .receipt-footer {
+            margin-top: 10px;
+            font-size: 12px; /* Adjusted for small paper */
+            color: #7f8c8d;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Receipt Popup -->
+    <div id="receiptPopup" class="receipt-popup" style="display: none;">
+        <h3>Library Borrowing Receipt</h3>
+        <p><strong>Borrower:</strong> <span id="borrowerName"></span></p>
+        <p><strong>RFID:</strong> <span id="rfidNumber"></span></p>
+        <p><strong>School ID:</strong> <span id="schoolId"></span></p>
+        <p><strong>Role:</strong> <span id="role"></span></p>
+        <p><strong>Borrowed:</strong> <span id="dateBorrowed"></span></p>
+        <p><strong>Due:</strong> <span id="dueDate"></span></p>
+        <div class="receipt-book-details">
+            <h4>Book Details</h4>
+            <p><strong>Title:</strong> <span id="bookTitle"></span></p>
+            <p><strong>Author:</strong> <span id="bookAuthor"></span></p>
+            <p><strong>ISBN:</strong> <span id="bookIsbn"></span></p>
+        </div>
+        <div class="consequences">
+            <h4>Late Returns</h4>
+            <p>Regular: ₱1/day</p>
+            <p>Reserve: ₱3/day</p>
+        </div>
+        <button onclick="confirmBorrowing()">Confirmed Borrow</button>
+        <button onclick="closeReceipt()">Cancel</button>
+        <div class="receipt-footer">
+            Thank you for using our library!
+        </div>
+    </div>
+
+    <!-- Return Book Receipt Popup -->
+    <div id="returnBookReceiptPopup" class="receipt-popup" style="display: none;">
+        <h3>Return Book Receipt</h3>
+        <p><strong>Borrower:</strong> <span id="returnBorrowerName"></span></p>
+        <p><strong>RFID:</strong> <span id="returnRfidNumber"></span></p>
+        <p><strong>School ID:</strong> <span id="returnSchoolId"></span></p>
+        <p><strong>Role:</strong> <span id="returnRole"></span></p>
+        <p><strong>Returned:</strong> <span id="returnDate"></span></p>
+        <div class="receipt-book-details">
+            <h4>Book Details</h4>
+            <p><strong>Title:</strong> <span id="returnBookTitle"></span></p>
+            <p><strong>Author:</strong> <span id="returnBookAuthor"></span></p>
+            <p><strong>ISBN:</strong> <span id="returnBookIsbn"></span></p>
+        </div>
+        <div class="consequences">
+            <h4>Penalty (if applicable)</h4>
+            <p>Penalty: ₱<span id="returnPenalty"></span></p>
+        </div>
+        <button onclick="confirmReturn()">Confirm Return</button>
+        <button onclick="closeReturnBookReceipt()">Close</button>
+        <div class="receipt-footer">
+            Thank you for returning the book!
+        </div>
+    </div>
+
+    <script>
+        // JavaScript functions for receipt.html
+        function confirmBorrowing() {
+            const bookId = document.getElementById("bookId").value; // Get the book_id from the hidden field
+
+            // Debugging: Log the bookId
+            console.log("Book ID being sent:", bookId, "Type:", typeof bookId);
+
+            try {
+                // Send a request to confirm the borrowing
+                fetch("/confirm_borrow", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        book_id: parseInt(bookId, 10) // Ensure book_id is an integer
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Print the receipt
+                        printReceipt();
+
+                        // Display a confirmation message
+                        alert("Thank you for borrowing! Please don't forget to return the book on time.");
+
+                        // Close the receipt popup
+                        closeReceipt();
+                    } else {
+                        response.json().then(errorData => {
+                            alert(errorData.message || "Error confirming borrowing.");
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error confirming borrowing:", error);
+                    alert("An error occurred while confirming the borrowing.");
+                });
+            } catch (error) {
+                console.error("Error confirming borrowing:", error);
+                alert("An error occurred while confirming the borrowing.");
+            }
+        }
+
+        function closeReceipt() {
+            // Hide the receipt popup and overlay
+            document.getElementById("receiptPopup").style.display = "none";
+            document.querySelector(".overlay").style.display = "none";
+
+            // Optionally, reset any borrowing-related data or state
+            resetBorrowingProcess();
+        }
+
+        function resetBorrowingProcess() {
+            // Reset any borrowing-related data or state here
+            console.log("Borrowing process canceled.");
+            // Example: Clear any temporary data or reset UI elements
+            document.getElementById("borrowerName").textContent = "";
+            document.getElementById("rfidNumber").textContent = "";
+            document.getElementById("schoolId").textContent = "";
+            document.getElementById("role").textContent = "";
+            document.getElementById("dateBorrowed").textContent = "";
+            document.getElementById("dueDate").textContent = "";
+            document.getElementById("bookTitle").textContent = "";
+            document.getElementById("bookAuthor").textContent = "";
+            document.getElementById("bookIsbn").textContent = "";
+        }
+
+        function printReceipt() {
+            // Create a copy of the receipt content without buttons
+            const receiptContent = document.getElementById("receiptPopup").innerHTML;
+
+            // Remove buttons from the receipt content
+            const receiptWithoutButtons = receiptContent.replace(/<button.*?<\/button>/g, '');
+
+            // Create a new window for printing
+            const printWindow = window.open('', '', 'width=215,height=300'); // Set window size to match paper
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Print Receipt</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                margin: 0;
+                                padding: 0;
+                                text-align: left; /* Ensure text is left-aligned */
+                            }
+                            h3 {
+                                font-size: 14px;
+                                text-align: center;
+                                margin: 0 0 10px;
+                            }
+                            p {
+                                font-size: 10px;
+                                margin: 5px 0;
+                                text-align: left;
+                            }
+                            .receipt-footer {
+                                font-size: 12px; /* Increase font size here */
+                                text-align: center;
+                                margin-top: 10px;
+                            }
+                            .receipt-book-details, .consequences {
+                                text-align: left;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${receiptWithoutButtons}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function confirmReturn() {
+            const bookId = document.getElementById("bookId").value; // Get the book_id from the hidden field
+
+            try {
+                // Send a request to confirm the return
+                fetch("/return_book", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        book_id: parseInt(bookId, 10) // Ensure book_id is an integer
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Print the return receipt
+                        printReturnReceipt();
+
+                        // Display a confirmation message
+                        alert("Book returned successfully!");
+
+                        // Close the return receipt popup
+                        closeReturnBookReceipt();
+                    } else {
+                        response.json().then(errorData => {
+                            alert(errorData.message || "Error confirming return.");
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error confirming return:", error);
+                    alert("An error occurred while confirming the return.");
+                });
+            } catch (error) {
+                console.error("Error confirming return:", error);
+                alert("An error occurred while confirming the return.");
+            }
+        }
+
+        function closeReturnBookReceipt() {
+            // Hide the return receipt popup and overlay
+            document.getElementById("returnBookReceiptPopup").style.display = "none";
+            document.querySelector(".overlay").style.display = "none";
+
+            // Optionally, reset any return-related data or state
+            resetReturnProcess();
+        }
+
+        function resetReturnProcess() {
+            // Reset any return-related data or state here
+            console.log("Return process canceled.");
+            // Example: Clear any temporary data or reset UI elements
+            document.getElementById("returnBorrowerName").textContent = "";
+            document.getElementById("returnRfidNumber").textContent = "";
+            document.getElementById("returnSchoolId").textContent = "";
+            document.getElementById("returnRole").textContent = "";
+            document.getElementById("returnDate").textContent = "";
+            document.getElementById("returnBookTitle").textContent = "";
+            document.getElementById("returnBookAuthor").textContent = "";
+            document.getElementById("returnBookIsbn").textContent = "";
+            document.getElementById("returnPenalty").textContent = "";
+        }
+
+        function printReturnReceipt() {
+            // Create a copy of the return receipt content without buttons
+            const returnReceiptContent = document.getElementById("returnBookReceiptPopup").innerHTML;
+
+            // Remove buttons from the return receipt content
+            const returnReceiptWithoutButtons = returnReceiptContent.replace(/<button.*?<\/button>/g, '');
+
+            // Create a new window for printing
+            const printWindow = window.open('', '', 'width=215,height=300'); // Set window size to match paper
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Print Return Receipt</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                margin: 0;
+                                padding: 0;
+                                text-align: left; /* Ensure text is left-aligned */
+                            }
+                            h3 {
+                                font-size: 14px;
+                                text-align: center;
+                                margin: 0 0 10px;
+                            }
+                            p {
+                                font-size: 10px;
+                                margin: 5px 0;
+                                text-align: left;
+                            }
+                            .receipt-footer {
+                                font-size: 12px; /* Increase font size here */
+                                text-align: center;
+                                margin-top: 10px;
+                            }
+                            .receipt-book-details, .consequences {
+                                text-align: left;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${returnReceiptWithoutButtons}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
+</body>
+</html>

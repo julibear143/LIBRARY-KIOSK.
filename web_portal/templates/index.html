@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}?v=1"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#000000"/>
+     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}"/>
+    <meta name="description" content="Login Page for Library"/>
+    <title>Library Web Portal Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            display: none;
+        }
+        .register-button {
+            margin-top: 10px;
+            background-color: #007bff; /* Bootstrap primary color */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 10px;
+            width: 100%;
+        }
+        .register-button:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Library Web Portal Login</h2>
+        <form id="loginForm">
+            <input type="text" id="school_id" placeholder="School ID" required><br>
+            <input type="password" id="password" placeholder="Password" required><br>
+            <button type="submit">Login</button>
+            <p class="error-message" id="error-message">Invalid credentials, please try again.</p>
+        </form>
+        <button id="registerButton" class="register-button">Register</button> <!-- Register button -->
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('error-message');
+
+       loginForm.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const school_id = document.getElementById('school_id').value;
+    const password = document.getElementById('password').value;
+
+    let response = await fetch("http://127.0.0.1:5000/login_manual", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ school_id, password })
+    });
+
+    let data = await response.json();
+
+    if (response.ok) {
+        // Store the school_id in session storage
+        sessionStorage.setItem('schoolId', school_id);
+        window.location.href = data.redirect;  // Redirect based on the response
+    } else {
+        errorMessage.style.display = 'block'; // Show error message
+    }
+});
+
+        document.getElementById('registerButton').addEventListener('click', function() {
+            window.location.href = "/register"; // Redirect to the registration page
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<table border="1">
+    <tr>
+        <th>Title</th>
+        <th>Author</th>
+        <th>ISBN</th>
+        <th>Publisher</th>
+        <th>Year</th>
+        <th>Edition</th>
+        <th>Genre</th>
+        <th>Barcode</th>
+        <th>Status</th>
+    </tr>
+    {% for book in books %}
+    <tr>
+        <td>{{ book[1] }}</td>
+        <td>{{ book[2] }}</td>
+        <td>{{ book[3] }}</td>
+        <td>{{ book[4] }}</td>
+        <td>{{ book[5] }}</td>
+        <td>{{ book[6] }}</td>
+        <td>{{ book[7] }}</td>
+        <td>{{ book[8] }}</td>
+        <td>{{ book[9] }}</td>
+    </tr>
+    {% endfor %}
+</table>

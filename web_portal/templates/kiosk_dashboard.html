@@ -1,0 +1,2449 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Kiosk Dashboard</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+        <!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <style>
+            /* General Styles */
+
+            body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+           .sidebar {
+    width: 220px; /* Fixed width for the sidebar */
+    background: #343a40;
+    color: white;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Fixed height for the sidebar */
+    overflow-y: auto; /* Allow scrolling if content overflows */
+        }
+
+            .sidebar h2 {
+                text-align: center;
+            }
+
+            .sidebar div {
+                margin: 10px 0;
+                padding: 10px;
+                background: #34495e;
+                text-align: center;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+
+            .sidebar div:hover {
+                background: #1abc9c;
+            }
+
+       .content {
+    flex-grow: 1;
+    padding: 5px ; /* Reduced from 20px */
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 5px; /* Reduced from 20px */
+    max-width: calc(100% - 220px); /* Adjusted to match sidebar width */
+    overflow-y: auto;
+}
+
+            .top-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                background: #2980b9;
+                padding: 10px;
+                border-radius: 5px;
+                color: white;
+            }
+
+            .top-bar .search-container {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+
+            .top-bar .search-bar {
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 20px;
+                width: 400px;
+                font-size: 16px;
+            }
+
+            .top-bar .search-button {
+                padding: 10px 20px;
+                background: #1abc9c;
+                border: none;
+                cursor: pointer;
+                color: white;
+                font-size: 16px;
+                border-radius: 20px;
+                margin-left: 10px;
+            }
+
+            .top-bar .search-button:hover {
+                background: #16a085;
+            }
+
+            .autocomplete-box {
+                position: absolute;
+                top: 40px;
+                left: 0;
+                width: 75%;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                max-height: 200px;
+                overflow-y: auto;
+                display: none;
+                z-index: 10;
+            }
+
+            .autocomplete-box div {
+                padding: 10px;
+                cursor: pointer;
+                border-bottom: 1px solid #ddd;
+                background: white;
+                color: black;
+                font-size: 16px;
+            }
+
+            .autocomplete-box div:hover {
+                background: #f1f1f1;
+            }
+
+            /* ===== PROFILE PAGE ===== */
+      /* Enhanced Empty State Styles */
+.empty-state-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.empty-state-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 20px;
+}
+
+.empty-state-header h2 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.empty-state-header h2 i {
+    font-size: 1.5rem;
+}
+
+.empty-state-content {
+    padding: 40px;
+    text-align: center;
+}
+
+.empty-state-content i {
+    opacity: 0.6;
+}
+
+.empty-state-content h3 {
+    margin: 20px 0 10px;
+    color: var(--dark-color);
+}
+
+.empty-state-content p {
+    color: #64748b;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Enhanced Profile Styles */
+.profile-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 20px;
+}
+
+.profile-header h2 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-card {
+    padding: 30px;
+}
+
+.profile-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.profile-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.profile-section h3 {
+    color: var(--dark-color);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-detail {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.detail-label {
+    font-weight: 600;
+    width: 200px;
+    color: #555;
+}
+
+.detail-value {
+    flex: 1;
+    color: #334155;
+}
+
+            .main-content {
+    flex: 1;
+    background: #ecf0f1;
+    padding: 10px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+ /* ===== BOOK CARDS ===== */
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .book-card {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    width: 100%; /* Ensure it takes full width of grid cell */
+    max-width: 320px; /* Set a maximum width */
+    margin: 0 auto; /* Center the card if there's extra space */
+}
+
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .book-image-container {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .book-cover {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .book-card:hover .book-cover {
+            transform: scale(1.03);
+        }
+
+        .book-type-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .regular-badge { background: var(--primary-color); }
+        .reserve-badge { background: var(--danger-color); }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .book-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            color: var(--dark-color);
+            min-height: 50px;
+        }
+
+        .book-meta {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .meta-item i {
+            width: 18px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+
+        .status-pill {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+        }
+
+        .available {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .checked-out {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+ .action-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            background: var(--primary-color);
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+
+    /* SA BOOK DETAILS DESIGN */
+            .book-details {
+                display: flex;
+                align-items: flex-start;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                max-width: 985px;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .book-image {
+                width: 150px;
+                height: auto;
+                margin-right: 20px;
+                border-radius: 5px;
+            }
+
+            .book-info {
+                flex: 1;
+                width: 100%;
+            }
+
+            .borrow-history-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                background: white;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            .borrow-history-table th, .borrow-history-table td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: left;
+            }
+
+            .borrow-history-table th {
+                background: #2980b9;
+                color: white;
+            }
+
+            .book-status {
+                font-size: 18px;
+                font-weight: bold;
+                margin-top: 10px;
+                padding: 5px 10px;
+                border-radius: 5px;
+                display: inline-block;
+            }
+
+            .status-available {
+                color: green;
+                background: #d4edda;
+                border: 1px solid green;
+            }
+
+            .status-checkedout {
+                color: red;
+                background: #f8d7da;
+                border: 1px solid red;
+            }
+
+            .reserve-button {
+                display: block;
+                margin-top: 15px;
+                padding: 10px 20px;
+                background: #1abc9c;
+                border: none;
+                cursor: pointer;
+                color: white;
+                font-size: 16px;
+                border-radius: 20px;
+                width: 100%;
+                max-width: 200px;
+            }
+
+            .reserve-button:hover {
+                background: #16a085;
+            }
+
+            /* Receipt-specific styling */
+            .book-kiosk-details {
+                display: flex;
+                flex-direction: column;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                max-width: 965px;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .book-kiosk-details h2 {
+                margin: 0 0 10px;
+                text-align: center;
+            }
+
+            .book-kiosk-details p {
+                margin: 5px 0;
+                text-align: left;
+            }
+
+            .book-kiosk-details button {
+                margin-top: 15px;
+                padding: 10px 20px;
+                background: #1abc9c;
+                border: none;
+                cursor: pointer;
+                color: white;
+                font-size: 16px;
+                border-radius: 20px;
+                width: 100%;
+                max-width: 200px;
+            }
+
+            .book-kiosk-details button:hover {
+                background: #16a085;
+            }
+
+         /* Receipt Popup for 57mm x 30mm Thermal Paper */
+    .receipt-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 5px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 215px; /* 57mm in pixels */
+    max-width: 215px; /* Ensure it doesn't exceed the paper width */
+    font-family: Arial, sans-serif;
+    font-size: 11px; /* Smaller base font size */
+    line-height: 1; /* Tighter line spacing */
+
+}
+
+    .receipt-popup h3 {
+        margin: 0 0 10px;
+        font-size: 14px; /* Adjusted for small paper */
+        color: #2c3e50;
+    }
+
+    .receipt-popup p {
+        margin: 5px 0;
+        font-size: 10px; /* Adjusted for small paper */
+        color: #34495e;
+        text-align: left;
+    }
+
+    .receipt-popup .receipt-header {
+        font-size: 12px; /* Adjusted for small paper */
+        font-weight: bold;
+        color: #2980b9;
+        margin-bottom: 10px;
+    }
+
+    .receipt-popup .receipt-book-details {
+        background: #f9f9f9;
+        padding: 8px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+    }
+
+    .receipt-popup .receipt-book-details h4 {
+        margin: 0 0 8px;
+        font-size: 12px; /* Adjusted for small paper */
+        color: #2c3e50;
+    }
+
+    .receipt-popup .receipt-book-details p {
+        margin: 4px 0;
+        font-size: 10px; /* Adjusted for small paper */
+        color: #34495e;
+    }
+
+    .receipt-popup .consequences {
+        background: #f9f9f9;
+        padding: 8px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+    }
+
+    .receipt-popup .consequences h4 {
+        margin: 0 0 8px;
+        font-size: 12px; /* Adjusted for small paper */
+        color: #2c3e50;
+    }
+
+    .receipt-popup .consequences p {
+        margin: 4px 0;
+        font-size: 10px; /* Adjusted for small paper */
+        color: #34495e;
+    }
+
+    .receipt-popup button {
+        margin-top: 10px;
+        padding: 8px 16px;
+        background: #1abc9c;
+        border: none;
+        color: white;
+        font-size: 10px; /* Adjusted for small paper */
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .receipt-popup button:hover {
+        background: #16a085;
+    }
+
+    .receipt-popup .receipt-footer {
+        margin-top: 10px;
+        font-size: 12px; /* Adjusted for small paper */
+        color: #7f8c8d;
+    }
+
+             /* Receipt Book Details */
+    .receipt-book-details {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+
+    .receipt-book-details h4 {
+        margin: 0 0 10px;
+        text-align: left;
+    }
+
+    .receipt-book-details p {
+        margin: 5px 0;
+        text-align: left;
+    }
+
+
+            /* Add this to your existing CSS */
+#unreturnedBooksPopup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 100%; /* Adjust width as needed */
+    max-width: 1000px; /* Maximum width */
+    max-height: 80vh; /* Maximum height */
+    overflow-y: auto; /* Enable scrolling if content overflows */
+}
+
+#unreturnedBooksPopup h3 {
+    margin: 0 0 20px;
+    font-size: 24px;
+    text-align: center;
+}
+
+#unreturnedBooksPopup table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+#unreturnedBooksPopup th,
+#unreturnedBooksPopup td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+#unreturnedBooksPopup th {
+    background-color: #2980b9;
+    color: white;
+}
+
+#unreturnedBooksPopup button {
+    display: block;
+    margin: 0 auto;
+    padding: 10px 20px;
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#unreturnedBooksPopup button:hover {
+    background-color: #16a085;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 10%;
+    height: 0%;
+   background: rgba(0, 0, 0, 0); /* Fully transparent */
+    z-index: 999;
+    display: none; /* Initially hidden */
+}
+
+    /* Return Book Barcode Scanning Modal */
+
+
+#barcodeScanPopup h3 {
+    font-size: 20px; /* Slightly smaller font size for the heading */
+    margin-bottom: 10px; /* Reduced spacing */
+    color: #2c3e50; /* Darker color for better readability */
+}
+
+#barcodeScanPopup p {
+    font-size: 14px; /* Slightly smaller font size for the instruction text */
+    margin-bottom: 15px; /* Reduced spacing */
+    color: #34495e; /* Darker color for better readability */
+}
+
+#barcodeScanPopup input {
+    font-size: 14px; /* Slightly smaller font size for the input field */
+    padding: 8px;
+    width: 80%; /* Slightly narrower input field */
+    margin: 0 auto 15px auto; /* Center the input field */
+    display: block;
+    border: 2px solid #1abc9c; /* Add border for better visibility */
+    border-radius: 8px; /* Rounded corners for the input field */
+    outline: none; /* Remove default outline */
+}
+
+#barcodeScanPopup input:focus {
+    border-color: #16a085; /* Change border color on focus */
+}
+
+#barcodeScanPopup button {
+    font-size: 14px; /* Slightly smaller font size for the button */
+    padding: 8px 16px;
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    border-radius: 6px; /* Rounded corners for the button */
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Smooth hover transition */
+    flex: 1; /* Prevents buttons from stretching unevenly */
+    max-width: 120px; /* Ensures buttons don't get too wide */
+}
+
+#barcodeScanPopup button:hover {
+    background-color: #16a085; /* Darker shade on hover */
+}
+
+#barcodeScanPopup .button-container {
+    display: flex;
+    justify-content: center; /* Centers buttons horizontally */
+    align-items: center; /* Centers buttons vertically */
+    gap: 10px; /* Adds space between buttons */
+    margin-top: 10px;
+    width: 100%; /* Ensures it takes the full width */
+}
+/* Borrowing Barcode Scanning Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 15px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 300px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    z-index: 1000; /* Ensure it's above the overlay */
+}
+
+.modal-content h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+.modal-content p {
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: #34495e;
+}
+
+.modal-content input {
+    font-size: 16px;
+    padding: 8px;
+    width: 80%;
+    margin: 0 auto 15px auto;
+    display: block;
+    border: 2px solid #1abc9c;
+    border-radius: 8px;
+    outline: none;
+    text-align: center;
+}
+
+.modal-content input:focus {
+    border-color: #16a085;
+}
+#borrowCountDisplay {
+    color: #555;
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 5px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    text-align: center;
+}
+.error-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    text-align: center;
+    max-width: 320px;
+    width: 90%;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    opacity: 0;
+    animation: popIn 0.3s ease-out forwards;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.error-popup h3 {
+    color: #e74c3c;
+    margin: 0 0 10px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.error-popup p {
+    color: #555;
+    line-height: 1.5;
+    margin: 0 0 20px;
+    font-size: 0.95rem;
+}
+
+.error-popup button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    width: 100%;
+    max-width: 200px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.error-popup button:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.error-popup button:active {
+    transform: translateY(0);
+}
+
+@keyframes popIn {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+/* Button container to align buttons properly */
+.button-container {
+    display: flex;
+    justify-content: center; /* Centers buttons horizontally */
+    align-items: center; /* Centers buttons vertically */
+    gap: 10px; /* Adds space between buttons */
+    margin-top: 10px;
+    width: 100%; /* Ensures it takes the full width */
+}
+
+/* Default button styles */
+.modal-content button {
+    font-size: 14px;
+    padding: 8px 16px;
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex: 1; /* Prevents buttons from stretching unevenly */
+    max-width: 120px; /* Ensures buttons don't get too wide */
+}
+
+/* Cancel button styling */
+.modal-content button.cancel {
+    background-color: #e74c3c;
+}
+
+.modal-content button.cancel:hover {
+    background-color: #c0392b;
+}
+
+.modal-content button:hover {
+    background-color: #16a085;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+}
+
+            .profile-button {
+    padding: 10px 20px;
+    background: #1abc9c;
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-size: 16px;
+    border-radius: 20px;
+}
+
+.profile-button:hover {
+    background: #16a085;
+}
+
+:root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+        }
+.d-flex.align-items-center {
+    align-items: center; /* Center items vertically */
+}
+
+.justify-content-between {
+    justify-content: space-between; /* Space between items */
+}
+
+.align-items-center {
+    align-items: center; /* Center items vertically */
+}
+
+.book-status {
+    font-size: 12px; /* Adjust font size */
+    font-weight: bold;
+    padding: 4px 8px; /* Adjust padding */
+    border-radius: 12px;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 5px; /* Add margin to the right for spacing */
+}
+
+.btn-view-details {
+    padding: 6px 12px; /* Adjust padding for a smaller button */
+    font-size: 12px; /* Adjust font size */
+    text-align: center; /* Center the text */
+    min-width: 80px; /* Set a minimum width */
+    max-width: 120px; /* Set a maximum width */
+    display: inline-flex; /* Use inline-flex for better alignment */
+    align-items: center; /* Center text vertically */
+    border-radius: 5px; /* Optional: Add border radius for rounded corners */
+        height: 33px; /* Set a fixed height to match the status */
+
+}
+.btn-sm {
+    padding: 2px 4px; /* Adjust padding for smaller button */
+    font-size: 11px; /* Adjust font size */
+}
+
+/* Ensure button and status are vertically aligned */
+.d-flex.align-items-center {
+    align-items: center;
+}
+
+/* Card footer adjustments */
+.mt-auto.p-2.border-top {
+    padding: 8px 12px !important;
+}
+
+.status-available {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.status-checkedout {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+/* Card improvements */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card-img {
+    border-radius: 4px 0 0 4px;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.card-text small {
+    color: #6c757d;
+}
+.btn-view-details {
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    white-space: nowrap; /* Prevents text wrapping */
+    min-width: 80px; /* Ensures consistent width */
+}
+
+
+
+        </style>
+    </head>
+    <body>
+        <div class="sidebar">
+            <h2>Kiosk Dashboard</h2>
+            <div onclick="viewBooks()">View Books</div>
+            <div onclick="borrowBook()">Borrow Book</div>
+            <div onclick="returnBook()">Return Book</div>
+            <div onclick="viewBorrowingHistory()">Borrowing History</div>
+            <div onclick="goToBorrowingRules()">Library Borrowing Rules</div>
+        </div>
+        <div class="content">
+            <div class="top-bar">
+                <div><strong>Dashboard</strong></div>
+                <div class="search-container">
+                    <input type="text" class="search-bar" placeholder="Search for books..." id="searchInput" onkeyup="fetchBookSuggestions()">
+                    <button class="search-button" onclick="searchBooks()">🔍 Search</button>
+                    <div class="autocomplete-box" id="autocompleteBox"></div>
+                </div>
+                <div>
+                   <button class="profile-button" onclick="viewProfile()" id="profileButton">Loading...</button>
+                    <button class="profile-button" onclick="logout()">
+                        <i class="fas fa-power-off"></i> Logout
+                    </button>
+                </div>
+            </div>
+            <div class="main-content" id="booksContainer">
+                <!-- Books will be dynamically loaded here -->
+
+            </div>
+        </div>
+
+<!-- Borrowing Barcode Scanning Modal -->
+<div id="borrowBarcodeScanModal" class="modal">
+    <div class="modal-content">
+        <h3>Please Scan the Book's ISBN Barcode</h3>
+        <p>Scan the barcode of the book you wish to borrow.</p>
+        <p id="borrowCountDisplay" style="margin-bottom: 15px; font-size: 14px;"></p>
+        <input type="text" id="borrowBarcodeInput" placeholder="Scan barcode here..." autofocus onkeydown="handleBorrowBarcodeScan(event)">
+        <div class="button-container">
+            <button onclick="closeBorrowBarcodeScanModal()" class="cancel">Cancel</button>
+        </div>
+    </div>
+</div>
+         <!-- Receipt Popup -->
+  <div id="receiptPopup" class="receipt-popup" style="display: none;">
+    <div style="text-align: center;"> <!-- Centering wrapper -->
+        <h3>Library Borrowing Receipt</h3>
+    </div>
+    <p><strong>Borrower:</strong> <span id="borrowerName"></span></p>
+    <p><strong>RFID:</strong> <span id="rfidNumber"></span></p>
+    <p><strong>School ID:</strong> <span id="schoolId"></span></p>
+    <p><strong>Role:</strong> <span id="role"></span></p>
+    <p><strong>Borrowed:</strong> <span id="dateBorrowed"></span></p>
+    <p><strong>Due:</strong> <span id="dueDate"></span></p>
+    <div class="receipt-book-details">
+        <h4 style="text-align: center;  font-weight: bold;">Book Details</h4> <!-- Centering wrapper -->
+        <p><strong>Title:</strong> <span id="bookTitle"></span></p>
+        <p><strong>Author:</strong> <span id="bookAuthor"></span></p>
+        <p><strong>Book Category:</strong> <span id="bookCategory"></span></p>
+        <p><strong>Book Type:</strong> <span id="bookType"></span></p>
+        <p><strong>ISBN:</strong> <span id="bookIsbn"></span></p>
+        <p><strong>Barcode:</strong> <span id="bookBarcode"></span></p>
+    </div>
+    <div class="consequences">
+        <h4 style="text-align: center;  font-weight: bold;">Late Returns</h4> <!-- Centering wrapper -->
+        <p>Regular: ₱1/day</p>
+        <p>Reserve: ₱3/day</p>
+    </div>
+    <div style="text-align: center;"> <!-- Centering wrapper -->
+        <button onclick="confirmBorrowing()">Confirmed Borrow</button>
+        <button onclick="closeReceipt()">Cancel</button>
+    </div>
+
+    <!-- Centered Text for Borrowing -->
+    <div style="margin-top: 20px; text-align: center;  font-weight: bold;"> <!-- Centering wrapper -->
+        <p>For Borrowing Of Books</p> <!-- Centered text -->
+    </div>
+
+    <!-- Processed By Section -->
+    <div style="margin-top: 20px; "> <!-- No centering -->
+        <p>Processed By: </p>
+         <p>  ______________________</p>
+        <p>Date: </p>
+         <p>  ______________________</p>
+    </div>
+
+    <div class="receipt-footer" style="text-align: center; font-weight: bold;"> <!-- Centering wrapper -->
+        Thank you for using our library!
+    </div>
+</div>
+    <input type="hidden" id="bookId" value=""> <!-- Hidden field for book_id -->
+    </div>
+
+        <!-- Unreturned Books Popup -->
+    <div id="unreturnedBooksPopup" class="receipt-popup" style="display: none;">
+        <h3>Unreturned Books</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Book Title</th>
+        <th>Author</th>
+        <th>ISBN</th>
+        <th>Barcode</th>
+        <th>Date Borrowed</th>
+        <th>Due Date</th>
+        <th>Penalty (if late)</th>
+        <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="unreturnedBooksTableBody">
+                <!-- Unreturned books will be populated here -->
+            </tbody>
+        </table>
+        <button onclick="closeUnreturnedBooksPopup()">Close</button>
+    </div>
+
+
+        <!-- Barcode Scanning Popup  For Return Book-->
+
+<div id="overlay" class="overlay" style="display: none;"></div>
+<div id="barcodeScanPopup" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Please Scan the Book Barcode</h3>
+        <p>Scan the barcode of the book to confirm the return.</p>
+        <input type="text" id="barcodeInput" placeholder="Scan barcode here..." autofocus onkeydown="handleBarcodeScan(event)">
+    </div>
+
+</div>
+
+     <!-- Return Book Receipt Popup -->
+<div id="returnBookReceiptPopup" class="receipt-popup" style="display: none;">
+    <div style="text-align: center; font-weight: bold;"> <!-- Centering wrapper -->
+        <h3>Return Book Receipt</h3>
+    </div>
+    <p><strong>Borrower:</strong> <span id="returnBorrowerName"></span></p>
+    <p><strong>RFID:</strong> <span id="returnRfidNumber"></span></p>
+    <p><strong>School ID:</strong> <span id="returnSchoolId"></span></p>
+    <p><strong>Role:</strong> <span id="returnRole"></span></p>
+    <p><strong>Borrowed:</strong> <span id="returnDateBorrowed"></span></p>
+    <p><strong>Due:</strong> <span id="returnDueDate"></span></p>
+    <p><strong>Returned:</strong> <span id="returnDate"></span></p>
+    <div class="receipt-book-details">
+        <h4 style="text-align: center; font-weight: bold;">Book Details</h4> <!-- Centering wrapper -->
+        <p><strong>Title:</strong> <span id="returnBookTitle"></span></p>
+        <p><strong>Author:</strong> <span id="returnBookAuthor"></span></p>
+        <p><strong>Book Category:</strong> <span id="returnBookCategory"></span></p>
+        <p><strong>Book Type:</strong> <span id="returnBookType"></span></p>
+        <p><strong>ISBN:</strong> <span id="returnBookIsbn"></span></p>
+        <p><strong>Barcode:</strong> <span id="returnBookBarcode"></span></p>
+    </div>
+    <div class="consequences">
+        <h4 style="text-align: center;">Penalty</h4> <!-- Centering wrapper -->
+        <p>Penalty: ₱<span id="returnPenalty">0</span></p>
+    </div>
+    <div style="text-align: center;"> <!-- Centering wrapper -->
+        <button onclick="confirmReturn()">Confirm Return</button>
+        <button onclick="closeReturnBookReceipt()">Close</button>
+    </div>
+
+    <!-- Centered Text for Returning -->
+    <div style="margin-top: 20px; text-align: center; font-weight: bold;"> <!-- Centering wrapper -->
+        <p>For Returning Of Books</p> <!-- Centered text -->
+    </div>
+
+    <!-- Received By Section -->
+    <div style="margin-top: 20px; ;"> <!-- No centering -->
+        <p>Received By: </p>
+          <p>   ______________________</p>
+        <p>Date: </p>
+           <p>  ______________________</p>
+    </div>
+
+    <div class="receipt-footer" style="text-align: center;font-weight: bold;"> <!-- Centering wrapper -->
+        Thank you for returning the book!
+    </div>
+</div>
+
+
+        <script>
+
+           async function loadLibraryBooks() {
+    console.log("Loading library books...");
+    try {
+        let response = await fetch(`http://127.0.0.1:5000/get_available_books`);
+        if (!response.ok) {
+            throw new Error("Error loading available books");
+        }
+        let books = await response.json();
+
+        let bookListHtml = books.map(book => {
+            return `
+                <div class="book-card">
+                    <div class="book-image-container" style="display: flex; justify-content: center; align-items: center; background: #f5f5f5;">
+                        <img src="${book.image_url || 'static/default_book_cover.png'}"
+                             style="max-width: 100%; max-height: 100%; object-fit: contain;"
+                             class="book-cover"
+                             alt="${book.title}"
+                             onerror="this.src='static/default_book_cover.png'">
+                        <div class="book-type-badge ${book.book_type === 'Reserve' ? 'reserve-badge' : 'regular-badge'}">
+                            ${book.book_type}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="book-title">${book.title}</h5>
+                        <div class="book-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-user-pen"></i>
+                                <span>${book.author}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-hashtag"></i>
+                                <span>${book.isbn}</span>
+                            </div>
+                        <div class="meta-item">
+                            <i class="fas fa-tag"></i>
+                            <span>${book.lcc_classification || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="card-footer">
+                        <div class="status-pill ${book.status === 'Available' ? 'available' : 'checked-out'}">
+                            <i class="fas ${book.status === 'Available' ? 'fa-check-circle' : 'fa-clock'}"></i>
+                            ${book.status}
+                        </div>
+                        <button class="action-btn" onclick="viewBookDetails(${book.id})">
+                            <i class="fas fa-eye"></i> Details
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById("booksContainer").innerHTML = `
+            <h4>Library Books</h4>
+            <div class="books-grid">${bookListHtml}</div>
+        `;
+    } catch (error) {
+        console.error("Error fetching available books:", error);
+        document.getElementById("booksContainer").innerHTML = `<p class='text-danger'>Error loading available books: ${error.message}</p>`;
+    }
+}
+
+        function viewBooks() {
+            loadLibraryBooks();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadLibraryBooks(); // Load books immediately after login
+        });
+
+        // Fetch book suggestions dynamically from the Flask API
+            function fetchBookSuggestions() {
+                let input = document.getElementById("searchInput").value.trim();
+                let autocompleteBox = document.getElementById("autocompleteBox");
+
+                if (input === "") {
+                    autocompleteBox.style.display = "none";
+                    return;
+                }
+
+                fetch(`/kiosk_search_books?query=${input}`)
+                    .then(response => response.json())
+                    .then(books => {
+                        if (books.length === 0) {
+                            autocompleteBox.style.display = "none";
+                            return;
+                        }
+
+                        autocompleteBox.innerHTML = books.map(book => `
+                            <div onclick="viewBookDetails(${book.id})">${book.title}</div>
+                        `).join("");
+
+                        autocompleteBox.style.display = "block";
+                    })
+                    .catch(error => console.error("Error fetching books:", error));
+            }
+
+
+
+
+            // Fetch and display book details dynamically
+          async function viewBookDetails(bookId) {
+    console.log(`Fetching book details for ID: ${bookId}`);
+
+    try {
+        let response = await fetch(`/book/${bookId}`, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+
+        if (!response.ok) {
+            throw new Error("Error loading book details");
+        }
+
+        let book = await response.json();
+        console.log("Book data:", book);
+
+          // Sort the borrow_history by borrow_date in descending order (newest first)
+        book.borrow_history.sort((a, b) => {
+            return new Date(b.borrow_date) - new Date(a.borrow_date);
+        });
+
+
+        let bookImage = book.image_url && book.image_url.trim() !== ""
+                        ? book.image_url
+                        : "/static/default_image_url.jpg";
+
+        // Format the dates in the borrowing history with correct timezone
+        const formattedBorrowHistory = book.borrow_history.map(record => {
+            return {
+                ...record,
+                borrow_date: formatDate(record.borrow_date),
+                return_date: record.return_date ? formatDate(record.return_date) : '-'
+            };
+        });
+
+
+        const booksContainer = document.getElementById('booksContainer');
+        booksContainer.innerHTML = `
+            <div class="book-details">
+                <img src="${bookImage}" class="book-image"
+                    onerror="this.onerror=null;this.src='/static/default_image_url.jpg';">
+                <div class="book-info">
+                    <h1>${book.title}</h1>
+                    <p><strong>Author:</strong> ${book.author}</p>
+                    <p><strong>LCC Classification:</strong> ${book.lcc_classification || 'Not specified'}</p>
+                    <p><strong>Book Type:</strong> ${book.book_type}</p>
+                    <p><strong>Publisher:</strong> ${book.publisher}</p>
+                    <p><strong>Publication Year:</strong> ${book.publication_date}</p>
+                    <p><strong>Edition:</strong> ${book.edition}</p>
+                    <p><strong>ISBN:</strong> ${book.isbn}</p>
+                    <p><strong>Barcode:</strong> ${book.barcode}</p>
+                </div>
+            </div>
+
+            <h2>Borrowing History</h2>
+            <table class="borrow-history-table">
+                <thead>
+                    <tr>
+                        <th>Borrower Name</th>
+                        <th>School ID</th>
+                        <th>RFID Number</th>
+                        <th>Role</th>
+                        <th>Date Borrowed</th>
+                        <th>Returned Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${formattedBorrowHistory.map(record => `
+                        <tr>
+                            <td>${record.borrower_name}</td>
+                            <td>${record.school_id}</td>
+                            <td>${record.rfid_number}</td>
+                            <td>${record.role}</td>
+                            <td>${record.borrow_date}</td>
+                            <td>${record.return_date}</td>
+                            <td>${record.status}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <button class="profile-button" onclick="viewBooks()">Back to Books</button>
+        `;
+    } catch (error) {
+        console.error("Error fetching book details:", error);
+        document.getElementById('booksContainer').innerHTML = `<p class='text-danger'>Error loading book details: ${error.message}</p>`;
+    }
+}
+
+            // Borrow book function
+  async function borrowBook() {
+    document.getElementById("borrowBarcodeScanModal").style.display = "block";
+    document.getElementById("borrowBarcodeInput").value = "";
+    document.getElementById("borrowBarcodeInput").focus();
+
+    try {
+        const userResponse = await fetch("/get_kiosk_user_profile");
+        if (!userResponse.ok) throw new Error("Failed to fetch user");
+        const user = await userResponse.json();
+
+        const borrowCountResponse = await fetch(`/get_current_borrow_count?user_id=${user.id}`);
+        if (!borrowCountResponse.ok) throw new Error("Failed to fetch count");
+        const borrowCount = await borrowCountResponse.json();
+
+        const maxAllowed = user.role === 'Student' ? 3 : 5;
+        const countDisplay = document.getElementById("borrowCountDisplay");
+
+        if (borrowCount.count >= maxAllowed) {
+            countDisplay.innerHTML = `<span style="color: red;">You have reached your limit (${maxAllowed} books). Please return books first.</span>`;
+        } else {
+            countDisplay.innerHTML = `You can borrow ${maxAllowed - borrowCount.count} more books`;
+        }
+    } catch (error) {
+        console.error("Error fetching borrow count:", error);
+        document.getElementById("borrowCountDisplay").textContent = "";
+    }
+}
+
+function closeBorrowBarcodeScanModal() {
+    document.getElementById("borrowBarcodeScanModal").style.display = "none";
+}
+
+function handleBorrowBarcodeScan(event) {
+    if (event.key === 'Enter') {
+        const scannedBarcode = document.getElementById('borrowBarcodeInput').value.trim();
+        closeBorrowBarcodeScanModal(); // Close the modal
+
+        // Fetch book details by barcode
+        fetchBookDetailsByBarcode(scannedBarcode);
+    }
+}
+
+   async function fetchBookDetailsByBarcode(barcode) {
+    try {
+        // Fetch book details
+        const bookResponse = await fetch(`/get_book_by_barcode?barcode=${encodeURIComponent(barcode)}`);
+        if (!bookResponse.ok) {
+            const errorData = await bookResponse.json();
+            alert(errorData.message || "Book not found. Please scan again.");
+            return;
+        }
+        const book = await bookResponse.json();
+
+        // Fetch user details
+        const userResponse = await fetch("/get_kiosk_user_profile");
+        if (!userResponse.ok) {
+            alert("Failed to fetch user details. Please try again.");
+            return;
+        }
+        const user = await userResponse.json();
+
+        // Check current borrow count
+        const borrowCountResponse = await fetch(`/get_current_borrow_count?user_id=${user.id}`);
+        if (!borrowCountResponse.ok) {
+            alert("Failed to check borrowing limit. Please try again.");
+            return;
+        }
+        const borrowCount = await borrowCountResponse.json();
+
+        // Determine max allowed based on role
+        const maxAllowed = user.role === 'Student' ? 3 :
+                          user.role === 'Teacher' ? 5 :
+                          3; // Default for other roles
+
+       if (borrowCount.count >= maxAllowed) {
+    // Replace alert() with a modal or styled message
+    showBorrowLimitError(maxAllowed);
+    return;
+}
+
+
+        // Calculate loan period based on user role and book type
+        let loanPeriodDays;
+        if (user.role === 'Student') {
+            loanPeriodDays = book.book_type === 'Reserve' ? 1 : 7; // Reserve: 3 day, Regular: 7 days
+        } else if (user.role === 'Teacher') {
+            loanPeriodDays = 152; // 5 months for teachers
+        } else {
+            loanPeriodDays = 7; // Default for other roles
+        }
+
+        // Calculate dates
+        const borrowDate = new Date();
+        const dueDate = new Date(borrowDate);
+        dueDate.setDate(dueDate.getDate() + loanPeriodDays);
+
+        // Format dates for display
+        const borrowDateFormatted = formatLocalDateTime(borrowDate);
+        const dueDateFormatted = formatLocalDateTime(dueDate);
+
+        // Prepare receipt data
+        const receiptData = {
+            borrower_name: user.name,
+            rfid_number: user.rfid_number,
+            school_id: user.school_id,
+            role: user.role,
+            date_borrowed: borrowDateFormatted,
+            due_date: dueDateFormatted,
+            book_details: {
+                id: book.id,
+                title: book.title,
+                author: book.author,
+                isbn: book.isbn,
+                book_type: book.book_type,
+                barcode: book.barcode,
+                lcc_classification: book.lcc_classification
+            }
+        };
+
+        // Display receipt
+        displayReceipt(receiptData);
+
+    } catch (error) {
+        console.error("Error in fetchBookDetailsByBarcode:", error);
+        alert("An error occurred while processing the book. Please try again.");
+    }
+}
+
+function showBorrowLimitError(maxAllowed) {
+    const errorBox = document.createElement('div');
+    errorBox.className = 'error-popup';
+    errorBox.innerHTML = `
+        <h3>📚 Borrowing Limit Reached</h3>
+        <p>You can only borrow <strong>${maxAllowed} books</strong> at a time.</p>
+        <p>Please return some books first.</p>
+        <button onclick="this.parentElement.remove()">OK</button>
+    `;
+    document.body.appendChild(errorBox);
+}
+
+// Helper function to format date/time
+function formatLocalDateTime(date) {
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    };
+    return date.toLocaleString('en-US', options);
+}
+      function displayReceipt(receipt) {
+    document.getElementById("borrowerName").textContent = receipt.borrower_name;
+    document.getElementById("rfidNumber").textContent = receipt.rfid_number || "N/A";
+    document.getElementById("schoolId").textContent = receipt.school_id || "N/A";
+    document.getElementById("role").textContent = receipt.role || "N/A";
+    document.getElementById("dateBorrowed").textContent = receipt.date_borrowed;
+    document.getElementById("dueDate").textContent = receipt.due_date;
+    document.getElementById("bookTitle").textContent = receipt.book_details.title;
+    document.getElementById("bookAuthor").textContent = receipt.book_details.author;
+    document.getElementById("bookIsbn").textContent = receipt.book_details.isbn;
+    document.getElementById("bookType").textContent = receipt.book_details.book_type;
+    document.getElementById("bookBarcode").textContent = receipt.book_details.barcode;
+    document.getElementById("bookCategory").textContent = receipt.book_details.lcc_classification;
+
+    document.getElementById("bookId").value = receipt.book_details.id;
+    document.getElementById("receiptPopup").style.display = "block";
+    document.getElementById("overlay").style.display = "block";
+}
+        function closeReceipt() {
+            // Hide the receipt popup and overlay
+            document.getElementById("receiptPopup").style.display = "none";
+            document.querySelector(".overlay").style.display = "none";
+
+            // Optionally, reset any borrowing-related data or state
+            resetBorrowingProcess();
+        }
+
+        function resetBorrowingProcess() {
+            // Reset any borrowing-related data or state here
+            console.log("Borrowing process canceled.");
+            // Example: Clear any temporary data or reset UI elements
+            document.getElementById("borrowerName").textContent = "";
+            document.getElementById("rfidNumber").textContent = "";
+            document.getElementById("schoolId").textContent = "";
+            document.getElementById("role").textContent = "";
+            document.getElementById("dateBorrowed").textContent = "";
+            document.getElementById("dueDate").textContent = "";
+            document.getElementById("bookTitle").textContent = "";
+            document.getElementById("bookAuthor").textContent = "";
+            document.getElementById("bookIsbn").textContent = "";
+        }
+
+     async function confirmBorrowing() {
+    const bookId = document.getElementById("bookId").value;
+    const userResponse = await fetch("/get_kiosk_user_profile");
+    if (!userResponse.ok) {
+        showAlert('Failed to verify user. Please try again.', 'error');
+        return;
+    }
+    const user = await userResponse.json();
+
+    // Re-check borrow count right before confirming
+    const borrowCountResponse = await fetch(`/get_current_borrow_count?user_id=${user.id}`);
+    if (!borrowCountResponse.ok) {
+        showAlert('Failed to verify borrowing limit. Please try again.', 'error');
+        return;
+    }
+    const borrowCount = await borrowCountResponse.json();
+    const maxAllowed = user.role === 'Student' ? 3 : 5;
+
+    if (borrowCount.count >= maxAllowed) {
+        showAlert(`You have reached your borrowing limit (${maxAllowed} books). Please return some books before borrowing more.`, 'error');
+        closeReceipt();
+        return;
+    }
+
+    try {
+        const response = await fetch("/confirm_borrow", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ book_id: parseInt(bookId, 10) })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            printReceiptSilently();
+            updateBookStatus(bookId, 'Checked Out');
+            showAlert('Book borrowed successfully!', 'success');
+            closeReceipt();
+        } else {
+            showAlert(data.message || "Borrowing failed", 'error');
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        showAlert("Network error - please try again", 'error');
+    }
+}
+
+function printReceiptSilently() {
+    console.log('1. Starting print process');
+
+    const receiptContent = document.getElementById("receiptPopup").innerHTML;
+    console.log('2. Got receipt content:', receiptContent);
+
+    const receiptWithoutButtons = receiptContent.replace(/<button.*?<\/button>/g, '');
+    console.log('3. Cleaned receipt content:', receiptWithoutButtons);
+
+    const printWindow = window.open('', '', 'width=48,height=300');
+    console.log('4. Created print window:', printWindow);
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print Receipt</title>
+                <meta charset="UTF-8">
+                <style>
+                    @page {
+                        size: 48mm auto;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    body {
+                        font-family: "Courier New", Courier, monospace;
+                        margin: 0;
+                        padding: 0;
+                        width: 48mm;
+                        text-align: left; /* Default to left for other content */
+                    }
+                    .center {
+                        text-align: center; /* Centering class */
+                    }
+                    h3 {
+                        font-size: 14px; /* Adjusted for better readability */
+                    }
+                    p {
+                        font-size: 11px; /* Adjusted for better readability */
+                    }
+                    /* Other styles remain unchanged */
+                </style>
+            </head>
+            <body>
+                ${receiptWithoutButtons}
+            </body>
+        </html>
+    `);
+    console.log('5. Wrote document content');
+
+    printWindow.document.close();
+    console.log('6. Closed document');
+
+    printWindow.print();
+    console.log('7. Called print()');
+
+    setTimeout(() => {
+        printWindow.close();
+        console.log('8. Closed print window');
+    }, 1000);
+}
+
+
+    function closeReceipt() {
+        // Hide the receipt popup and overlay
+        document.getElementById("receiptPopup").style.display = "none";
+        document.querySelector(".overlay").style.display = "none";
+
+        // Optionally, reset any borrowing-related data or state
+        resetBorrowingProcess();
+    }
+
+    function resetBorrowingProcess() {
+        // Reset any borrowing-related data or state here
+        console.log("Borrowing process canceled.");
+        // Example: Clear any temporary data or reset UI elements
+        document.getElementById("borrowerName").textContent = "";
+        document.getElementById("rfidNumber").textContent = "";
+        document.getElementById("schoolId").textContent = "";
+        document.getElementById("role").textContent = "";
+        document.getElementById("dateBorrowed").textContent = "";
+        document.getElementById("dueDate").textContent = "";
+        document.getElementById("bookTitle").textContent = "";
+        document.getElementById("bookAuthor").textContent = "";
+        document.getElementById("bookIsbn").textContent = "";
+    }
+
+// Store the selected book for return
+let selectedBookForReturn = null;
+
+async function returnBook() {
+    try {
+        const response = await fetch('/get_unreturned_books');
+        if (!response.ok) {
+            throw new Error('Failed to fetch unreturned books');
+        }
+        const books = await response.json();
+        displayUnreturnedBooks(books);
+    } catch (error) {
+        console.error('Error fetching unreturned books:', error);
+        alert('Failed to load unreturned books. Please try again.');
+    }
+}
+
+function displayUnreturnedBooks(books) {
+    const tableBody = document.getElementById('unreturnedBooksTableBody');
+    tableBody.innerHTML = ''; // Clear previous content
+
+    books.forEach(book => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${book.title}</td>
+            <td>${book.author}</td>
+            <td>${book.isbn}</td>
+            <td>${book.barcode}</td>
+            <td>${new Date(book.borrow_date).toLocaleDateString()}</td>
+            <td>${new Date(book.due_date).toLocaleDateString()}</td>
+            <td>₱${book.penalty}</td>
+            <td><button class="btn btn-danger" onclick="initiateReturn(${book.id}, '${book.barcode}')">Return</button></td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    document.getElementById('unreturnedBooksPopup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+}
+
+function closeUnreturnedBooksPopup() {
+    document.getElementById('unreturnedBooksPopup').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+}
+
+// New function to initiate the return process
+function initiateReturn(bookId, expectedBarcode) {
+    // Store the book info for verification
+    selectedBookForReturn = {
+        id: bookId,
+        expectedBarcode: expectedBarcode
+    };
+
+    // Hide unreturned books popup
+    document.getElementById('unreturnedBooksPopup').style.display = 'none';
+
+    // Show barcode scanning popup
+    document.getElementById('barcodeScanPopup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block'; // Show overlay
+    document.getElementById('barcodeInput').value = ''; // Clear previous input
+    document.getElementById('barcodeInput').focus(); // Focus on the input field
+}
+
+// Handle barcode scan
+function handleBarcodeScan(event) {
+    // Check if Enter key was pressed
+    if (event.key === 'Enter') {
+        const scannedBarcode = document.getElementById('barcodeInput').value.trim();
+
+        // Hide barcode popup
+        document.getElementById('barcodeScanPopup').style.display = 'none';
+
+        // Verify barcode matches
+        if (scannedBarcode === selectedBookForReturn.expectedBarcode) {
+            // Fetch book and user details to show in receipt
+            fetchReturnDetails(selectedBookForReturn.id);
+        } else {
+            alert('Barcode does not match. Please try again.');
+            // Show unreturned books popup again
+            document.getElementById('unreturnedBooksPopup').style.display = 'block';
+        }
+    }
+}
+
+// In your fetchReturnDetails function
+async function fetchReturnDetails(bookId) {
+    try {
+        const response = await fetch(`/get_return_details/${bookId}`);
+        if (!response.ok) throw new Error('Failed to fetch return details');
+        const returnData = await response.json();
+
+        // Debug log to verify all data including lcc_classification
+        console.log('Return details:', returnData);
+
+        // Ensure lcc_classification is included, fallback to empty string if not
+        if (!returnData.lcc_classification) {
+            returnData.lcc_classification = '';
+        }
+
+        displayReturnReceipt(returnData);
+    } catch (error) {
+        console.error('Error fetching return details:', error);
+        alert('Failed to load return details. Please try again.');
+    }
+}
+
+function displayReturnReceipt(returnData) {
+    // Format the current date/time for display
+    const returnDate = new Date();
+    const formattedReturnDate = formatDate(returnDate.toISOString());
+
+    // Set all the receipt fields
+    document.getElementById('returnBorrowerName').textContent = returnData.borrower_name;
+    document.getElementById('returnRfidNumber').textContent = returnData.rfid_number;
+    document.getElementById('returnSchoolId').textContent = returnData.school_id;
+    document.getElementById('returnRole').textContent = returnData.role;
+    document.getElementById('returnDate').textContent = formattedReturnDate; // Use the formatted date
+    document.getElementById('returnBookTitle').textContent = returnData.book_title;
+    document.getElementById('returnBookAuthor').textContent = returnData.book_author;
+    document.getElementById('returnBookIsbn').textContent = returnData.book_isbn;
+    document.getElementById('returnBookType').textContent = returnData.book_type;
+    document.getElementById('returnBookBarcode').textContent = returnData.barcode;
+
+    // Format the borrowed and due dates
+    document.getElementById('returnDateBorrowed').textContent = formatDate(returnData.borrow_date);
+    document.getElementById('returnDueDate').textContent = formatDate(returnData.due_date);
+
+    // Handle book category with fallback
+    document.getElementById('returnBookCategory').textContent =
+        returnData.lcc_classification || 'Not specified';
+
+    // Use the dynamic penalty value from backend
+    document.getElementById('returnPenalty').textContent = returnData.penalty || '0';
+
+    // Show the receipt popup
+    document.getElementById('returnBookReceiptPopup').style.display = "block";
+    document.getElementById('overlay').style.display = "block";
+}
+
+// Process the actual return after confirmation
+async function confirmReturn() {
+    if (!selectedBookForReturn) return;
+
+    try {
+        const response = await fetch('/return_book', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ book_id: selectedBookForReturn.id })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // 1. Print receipt silently
+            printReturnReceiptSilently();
+
+            // 2. Update UI in real-time
+            updateBookStatus(selectedBookForReturn.id, 'Available');
+
+            // 3. Show success message
+            showAlert('Book returned successfully!', 'success');
+
+            // 4. Close receipt popup
+            closeReturnBookReceipt();
+
+            // 5. Refresh unreturned books list
+            returnBook();
+        } else {
+            showAlert(data.message || "Return failed", 'error');
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        showAlert("Network error - please try again", 'error');
+    }
+}
+
+
+        // ================== UTILITY FUNCTIONS ================== //
+        function updateBookStatus(bookId, newStatus) {
+            // Update status in the book list
+            const statusElement = document.querySelector(`#book-${bookId}-status`);
+            if (statusElement) {
+                statusElement.textContent = newStatus;
+                statusElement.className = `book-status ${newStatus === 'Available' ? 'status-available' : 'status-checkedout'}`;
+            }
+
+            // If on book details page, update that too
+            const detailStatus = document.querySelector('.book-details .book-status');
+            if (detailStatus && document.getElementById('bookId').value == bookId) {
+                detailStatus.textContent = newStatus;
+                detailStatus.className = `book-status ${newStatus === 'Available' ? 'status-available' : 'status-checkedout'}`;
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.createElement('div');
+            alertBox.className = `alert alert-${type === 'error' ? 'danger' : 'success'} fixed-top mx-auto mt-3`;
+            alertBox.style.maxWidth = '500px';
+            alertBox.style.zIndex = '2000';
+            alertBox.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <span>${message}</span>
+                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+            document.body.appendChild(alertBox);
+            setTimeout(() => alertBox.remove(), 5000);
+        }
+
+function printReturnReceiptSilently() {
+    console.log('1. Starting return print process');
+
+    const receiptContent = document.getElementById("returnBookReceiptPopup").innerHTML;
+    console.log('2. Got return receipt content:', receiptContent);
+
+    const receiptWithoutButtons = receiptContent.replace(/<button.*?<\/button>/g, '');
+    console.log('3. Cleaned return receipt content:', receiptWithoutButtons);
+
+    const printWindow = window.open('', '', 'width=48,height=300');
+    console.log('4. Created print window:', printWindow);
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print Return Receipt</title>
+                <meta charset="UTF-8">
+                <style>
+                    @page {
+                        size: 48mm auto;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    body {
+                        font-family: "Courier New", Courier, monospace;
+                        margin: 0;
+                        padding: 0;
+                        width: 48mm;
+                        text-align: left; /* Default to left for other content */
+                    }
+                    .center {
+                        text-align: center; /* Centering class */
+                    }
+                    h3 {
+                        font-size: 14px; /* Adjusted for better readability */
+                    }
+                    p {
+                        font-size: 11px; /* Adjusted for better readability */
+                    }
+                    /* Other styles remain unchanged */
+                </style>
+            </head>
+            <body>
+                ${receiptWithoutButtons}
+            </body>
+        </html>
+    `);
+    console.log('5. Wrote document content');
+
+    printWindow.document.close();
+    console.log('6. Closed document');
+
+    printWindow.print();
+    console.log('7. Called print()');
+
+    setTimeout(() => {
+        printWindow.close();
+        console.log('8. Closed print window');
+    }, 1000);
+}
+
+// Close return receipt
+function closeReturnBookReceipt() {
+    // Hide the receipt popup and overlay
+    document.getElementById("returnBookReceiptPopup").style.display = "none";
+    document.querySelector(".overlay").style.display = "none";
+
+    // Reset the selected book
+    selectedBookForReturn = null;
+
+    // Reset any return-related data
+    resetReturnProcess();
+}
+
+function resetReturnProcess() {
+    // Reset any return-related data or state here
+    console.log("Return process completed.");
+    document.getElementById("returnBorrowerName").textContent = "";
+    document.getElementById("returnRfidNumber").textContent = "";
+    document.getElementById("returnSchoolId").textContent = "";
+    document.getElementById("returnRole").textContent = "";
+    document.getElementById("returnDate").textContent = "";
+    document.getElementById("returnBookTitle").textContent = "";
+    document.getElementById("returnBookAuthor").textContent = "";
+    document.getElementById("returnBookIsbn").textContent = "";
+    document.getElementById("returnBookBarcode").textContent = "";
+    document.getElementById("returnPenalty").textContent = "0";
+}
+
+function openModal() {
+    document.getElementById('barcodeScanPopup').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+}
+        async function viewBorrowingHistory() {
+    const container = document.getElementById("booksContainer");
+
+    // Show loading state
+    container.innerHTML = `
+        <div class="d-flex flex-column align-items-center justify-content-center py-5" style="min-height: 300px;">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4 class="mt-3 text-muted">Loading Your Borrowing History</h4>
+            <p class="text-muted">Please wait while we retrieve your records...</p>
+        </div>
+    `;
+
+    try {
+        // Get user profile first
+        const userResponse = await fetch("/get_kiosk_user_profile");
+        if (!userResponse.ok) {
+            throw new Error("Failed to load user profile. Please try again.");
+        }
+        const user = await userResponse.json();
+
+        // Fetch borrowing history
+        const historyResponse = await fetch(`/get_borrowing_history?school_id=${user.school_id}`);
+        if (!historyResponse.ok) {
+            throw new Error("Failed to load history data. Server error.");
+        }
+        const history = await historyResponse.json();
+
+        // Handle empty results
+        if (!history || history.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No borrowing history found.
+                </div>
+                <button class="btn btn-secondary mt-3" onclick="loadLibraryBooks()">
+                    <i class="fas fa-arrow-left"></i> Back to Books
+                </button>
+            `;
+            return;
+        }
+
+        // Format dates with correct timezone
+        const currentDate = new Date();
+        const formattedHistory = history.map(item => {
+            const dueDate = new Date(item.due_date);
+            const isOverdue = !item.return_date && dueDate < currentDate;
+            const isLateReturn = item.return_date && new Date(item.return_date) > dueDate;
+            const isNotReturned = !item.return_date;
+
+            return {
+                ...item,
+                borrow_date: formatDate(item.borrow_date),
+                due_date: formatDate(item.due_date),
+                return_date: item.return_date ? formatDate(item.return_date) : "Not Returned",
+                late_fees: item.late_fees ? `₱${item.late_fees.toFixed(2)}` : "₱0.00",
+                status: isOverdue ? "overdue" : isLateReturn ? "late" : isNotReturned ? "not-returned" : "normal"
+            };
+        });
+
+        // Render the table
+        container.innerHTML = `
+            <h2 class="mb-4">Borrowing History</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Borrow Date</th>
+                            <th>Due Date</th>
+                            <th>Return Date</th>
+                            <th>Late Fees</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${formattedHistory.map(item => `
+                            <tr class="${item.status === 'overdue' ? 'table-danger' :
+                                         item.status === 'late' ? 'table-warning' :
+                                         item.status === 'not-returned' ? 'table-info' : ''}">
+                                <td>
+                                    ${item.title}
+                                    ${item.status === 'overdue' ? '<span class="badge bg-danger ms-2">Overdue</span>' : ''}
+                                    ${item.status === 'late' ? '<span class="badge bg-warning ms-2">Late Returned</span>' : ''}
+                                    ${item.status === 'not-returned' ? '<span class="badge bg-info text-dark ms-2">Not Returned</span>' : ''}
+                                </td>
+                                <td>${item.author}</td>
+                                <td>${item.borrow_date}</td>
+                                <td>${item.due_date}</td>
+                                <td class="${item.status === 'not-returned' ? 'fw-bold' : ''}">
+                                    ${item.return_date}
+                                </td>
+                                <td class="${item.late_fees !== '₱0.00' ? 'text-danger fw-bold' : ''}">
+                                    ${item.late_fees}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn btn-primary mt-3" onclick="loadLibraryBooks()">
+                <i class="fas fa-book"></i> Back to Library Books
+            </button>
+        `;
+
+    } catch (error) {
+        console.error("Borrowing history error:", error);
+        let errorMessage = "Failed to load borrowing history";
+        if (error.name === "AbortError") {
+            errorMessage = "Request timed out. Please check your connection and try again.";
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        container.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div>
+                        <h5 class="mb-1">Error Loading History</h5>
+                        <p class="mb-0">${errorMessage}</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="d-grid gap-2 mt-3">
+                <button class="btn btn-danger" onclick="viewBorrowingHistory()">
+                    <i class="fas fa-sync-alt me-2"></i> Retry
+                </button>
+                <button class="btn btn-outline-secondary" onclick="loadLibraryBooks()">
+                    <i class="fas fa-book me-2"></i> Browse Books Instead
+                </button>
+            </div>
+        `;
+    }
+}
+
+
+// New function to format date/time exactly as is
+function formatLocalDateTime(date) {
+    const options = {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    };
+
+    return date.toLocaleString('en-US', options);
+}
+// Complete override of date formatting
+function formatDate(dateString, includeTime = true) {
+    if (!dateString) return "-";
+    try {
+        // Get the current time to determine the difference
+        const currentTime = new Date();
+        const currentHour = currentTime.getHours();
+        const currentMinutes = currentTime.getMinutes();
+
+        // Parse the server's date
+        const serverDate = new Date(dateString);
+
+        // Create a new date object with the actual local time
+        const correctedDate = new Date(serverDate);
+
+        // If the date appears to be 8 hours ahead, adjust it back
+        if (serverDate.getHours() - currentHour === 8 ||
+            (serverDate.getHours() - currentHour === 7 && serverDate.getMinutes() > currentMinutes)) {
+            correctedDate.setHours(serverDate.getHours() - 8);
+        }
+
+        // Format with standard methods
+        const options = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        };
+
+        if (includeTime) {
+            options.hour = '2-digit';
+            options.minute = '2-digit';
+            options.hour12 = true;
+        }
+
+        return correctedDate.toLocaleString('en-US', options);
+    } catch (e) {
+        console.warn("Date formatting error:", e);
+        return dateString;
+    }
+}
+            function goToBorrowingRules() {
+                window.location.href = "/borrowing_rules";
+            }
+
+         async function viewProfile() {
+    try {
+        // Show loading state
+        document.getElementById("booksContainer").innerHTML = `
+            <div class="d-flex justify-content-center py-5">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+
+        const response = await fetch("/get_kiosk_user_profile");
+        if (!response.ok) {
+            throw new Error("Failed to fetch user profile");
+        }
+        const user = await response.json();
+
+        // Display the profile using the enhanced design
+        document.getElementById("booksContainer").innerHTML = `
+            <div class="profile-container">
+                <div class="profile-header">
+                    <h2><i class="fas fa-user-circle"></i> User Profile</h2>
+                </div>
+
+                <div class="profile-card">
+                    <div class="profile-section">
+                        <h3><i class="fas fa-id-card"></i> Basic Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Name:</span>
+                            <span class="detail-value">${user.name || 'Not provided'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Role:</span>
+                            <span class="detail-value">${user.role || 'Not specified'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">School ID:</span>
+                            <span class="detail-value">${user.school_id || 'Not provided'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Gender:</span>
+                            <span class="detail-value">${user.gender || 'Not specified'}</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <h3><i class="fas fa-address-card"></i> Contact Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Email:</span>
+                            <span class="detail-value">${user.email || 'Not provided'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Contact Number:</span>
+                            <span class="detail-value">${user.contact_number || 'Not provided'}</span>
+                        </div>
+                    </div>
+
+                    ${user.role === 'Student' ? `
+                    <div class="profile-section">
+                        <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Course:</span>
+                            <span class="detail-value">${user.course || 'Not specified'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Year Level:</span>
+                            <span class="detail-value">${user.year_level || 'Not specified'}</span>
+                        </div>
+                    </div>` : `
+                    <div class="profile-section">
+                        <h3><i class="fas fa-briefcase"></i> Professional Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Department:</span>
+                            <span class="detail-value">${user.department || 'Not specified'}</span>
+                        </div>
+                    </div>`}
+
+                    <div class="profile-section">
+                        <h3><i class="fas fa-book-reader"></i> Library Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Library Card Number:</span>
+                            <span class="detail-value">${user.rfid_number || 'Not assigned'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary mt-3" onclick="loadLibraryBooks()">
+                <i class="fas fa-arrow-left"></i> Back to Books
+            </button>
+        `;
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        document.getElementById("booksContainer").innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error loading profile: ${error.message}
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="viewProfile()">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+function displayProfile(user) {
+    const profileHtml = `
+        <div class="profile-details">
+            <h2>User Profile</h2>
+            <p><strong>Name:</strong> ${user.name}</p>
+            <p><strong>Role:</strong> ${user.role}</p>
+            <p><strong>School ID:</strong> ${user.school_id}</p>
+            <p><strong>RFID Number:</strong> ${user.rfid_number}</p>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Contact Number:</strong> ${user.contact_number}</p>
+            <p><strong>Gender:</strong> ${user.gender}</p>
+            ${user.year_level ? `<p><strong>Year Level:</strong> ${user.year_level}</p>` : ''}
+            ${user.course ? `<p><strong>Course:</strong> ${user.course}</p>` : ''}
+            ${user.department ? `<p><strong>Department:</strong> ${user.department}</p>` : ''}
+        </div>
+    `;
+
+    document.getElementById("booksContainer").innerHTML = profileHtml;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    loadLibraryBooks(); // Load books immediately after login
+    fetchUserProfile(); // Fetch and display the user's name
+});
+
+async function fetchUserProfile() {
+    try {
+        const response = await fetch("/get_kiosk_user_profile");
+        if (!response.ok) {
+            throw new Error("Failed to fetch user profile");
+        }
+        const user = await response.json();
+        document.getElementById("profileButton").textContent = user.name;
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        document.getElementById("profileButton").textContent = "User";
+    }
+}
+
+           function logout() {
+    console.log("Logging out...");
+    fetch('/logout', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = "kiosk"; // Redirect to the login page
+        } else {
+            alert("Logout failed. Please try again.");
+        }
+    })
+    .catch(error => {
+        console.error("Error during logout:", error);
+        alert("An error occurred while logging out.");
+    });
+}
+
+            // Hide autocomplete box when clicking outside
+            document.addEventListener("click", function(event) {
+                if (!event.target.closest(".search-container")) {
+                    document.getElementById("autocompleteBox").style.display = "none";
+                }
+            });
+
+
+
+        </script>
+    </body>
+    </html>

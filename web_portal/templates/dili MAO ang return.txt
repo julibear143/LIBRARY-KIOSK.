@@ -1,0 +1,1855 @@
+from flask import Flask, render_template, request, jsonify, session, g, redirect
+from datetime import datetime, timedelta
+import mysql.connector
+import hashlib
+import os
+import json
+
+app = Flask(__name__, template_folder=os.path.join("web_portal", "templates"))
+app.secret_key = "your-strong-secret-key"
+
+DB_CONFIG = {
+    "host": "localhost",
+    "user": "root",
+    "password": "$Hevery143",
+    "database": "julibeardb"
+}
+
+def get_db():
+    if "db" not in g:
+        g.db = mysql.connector.connect(**DB_CONFIG)
+        g.cursor = g.db.cursor(dictionary=True)
+    return g.db, g.cursor
+
+@app.teardown_appcontext
+def close_db(exception):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        return register_user()
+    return render_template("register.html")
+
+@app.route("/register", methods=["POST"])
+def register_user():
+    db, cursor = get_db()
+    data = request.json
+
+    username = data.get("username")
+    role = data.get("role")
+    gender = data.get("gender")
+    email = data.get("email")
+    contact_number = data.get("contact_number")
+    school_id = data.get("school_id")
+    password = data.get("password")
+
+    # Handle role-based fields correctly
+    department = data.get("department") if role == "Teacher" else None
+    year_level = data.get("year_level") if role == "Student" else None
+    course = data.get("course") if role == "Student" else None
+
+    if not username or not role or not gender or not email or not contact_number or not school_id or not password:
+        return jsonify({"message": "All required fields must be filled"}), 400
+
+    if role == "Student" and (not year_level or not course):
+        return jsonify({"message": "Student must select a Year Level and Course"}), 400
+
+    if role == "Teacher" and not department:
+        return jsonify({"message": "Teacher must select a Department"}), 400
+
+    # Check if user already exists
+    cursor.execute("SELECT * FROM users WHERE school_id = %s", (school_id,))
+    existing_user = cursor.fetchone()
+    if existing_user:
+        return jsonify({"message": "User already exists with this School ID."}), 400
+
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
+    cursor.execute("""
+        INSERT INTO users (school_id, name, role, gender, email, contact_number, department, password, year_level, course, rfid_number) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
+    """, (school_id, username, role, gender, email, contact_number, department, hashed_password, year_level, course))
+
+    db.commit()
+    cursor.close()
+
+    return jsonify({"message": "Registration successful! Please proceed to the library front desk to get your RFID card."}), 201
+
+@app.route("/login_manual", methods=["POST"])
+def login_manual():
+    db, cursor = get_db()
+    data = request.json
+
+    if not data:
+        return jsonify({"message": "No data received"}), 400
+
+    cursor.execute("SELECT * FROM users WHERE school_id = %s", (data["school_id"],))
+    user = cursor.fetchone()
+    cursor.close()
+
+    if user:
+        hashed_password = hashlib.sha256(data["password"].encode()).hexdigest()
+        if hashed_password == user["password"]:
+            if user["role"] == "Admin":
+                return jsonify({"message": "Admin login successful", "redirect": "/admin_dashboard"})
+            else:
+                return jsonify({"message": "User login successful", "redirect": "/dashboard"})
+        else:
+            return jsonify({"message": "Invalid password"}), 401
+    else:
+        return jsonify({"message": "School ID not found"}), 401
+
+@app.route("/admin_dashboard")
+def admin_dashboard():
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM books")  # Fetch all books for the admin dashboard
+    books = cursor.fetchall()
+    print(f"Books in admin dashboard: {books}")  # Debugging line
+    cursor.close()
+    return render_template("admin_dashboard.html", books=books)
+
+@app.route("/dashboard")
+def user_dashboard():
+    return render_template("user_dashboard.html")
+
+UPLOAD_FOLDER = 'static/uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route("/add_book", methods=["POST"])
+def add_book():
+    db, cursor = get_db()
+    data = request.form  # Use request.form to get form data
+    title = data.get("title")
+    author = data.get("author")
+    isbn = data.get("isbn")
+    publisher = data.get("publisher")
+    publication_date = data.get("publication_date")
+    edition = data.get("edition")
+    lcc_classification = json.loads(data.get("lcc_classification"))  # Parse the JSON string
+    barcode = data.get("barcode")
+
+    # Check for existing book with the same ISBN
+    cursor.execute("SELECT * FROM books WHERE isbn = %s", (isbn,))
+    existing_book = cursor.fetchone()
+    if existing_book:
+        return jsonify({"message": "A book with this ISBN already exists."}), 400
+
+    # Handle image upload
+    if 'image' not in request.files:
+        return jsonify({"message": "No image file provided"}), 400
+
+    image = request.files['image']
+    if image.filename == '':
+        return jsonify({"message": "No selected file"}), 400
+
+    image_filename = f"{isbn}.jpg"  # Use ISBN as the filename
+    image_path = os.path.join(UPLOAD_FOLDER, image_filename)
+    image.save(image_path)  # Save the image
+
+    try:
+        # Insert book into database, including the image_url
+        cursor.execute("""
+            INSERT INTO books (title, author, isbn, publisher, publication_date, edition, lcc_classification, barcode, status, image_url) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Available', %s)
+        """, (title, author, isbn, publisher, publication_date, edition, ', '.join(lcc_classification), barcode, image_path))
+        db.commit()
+
+        return jsonify({"message": "Book added successfully!"}), 201
+    except mysql.connector.Error as err:
+        return jsonify({"message": str(err)}), 400
+    finally:
+        cursor.close()
+
+@app.route('/assign_library_card', methods=['POST'])
+def assign_library_card():
+    db, cursor = get_db()
+    data = request.get_json()
+    user_id = data['id']
+    card_number = data['cardNumber']
+
+    cursor.execute("UPDATE users SET rfid_number = %s WHERE id = %s", (card_number, user_id))
+    db.commit()
+
+    if cursor.rowcount > 0:
+        return jsonify({'message': 'Library card assigned successfully!'}), 200
+    return jsonify({'message': 'User not found!'}), 404
+
+@app.route('/get_unassigned_users', methods=['GET'])
+def get_unassigned_users():
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM users WHERE rfid_number IS NULL AND role != 'Admin'")
+    unassigned_users = cursor.fetchall()
+    return jsonify([{
+        'id': user['id'],
+        'name': user['name'],
+        'role': user['role']
+    } for user in unassigned_users])
+
+@app.route('/get_users', methods=['GET'])
+def get_users():
+    user_type = request.args.get('type')
+    db, cursor = get_db()
+
+    if user_type == 'teacher':
+        cursor.execute("SELECT * FROM users WHERE role = 'Teacher' AND rfid_number IS NOT NULL")
+    elif user_type == 'student':
+        cursor.execute("SELECT * FROM users WHERE role = 'Student' AND rfid_number IS NOT NULL")
+    else:
+        return jsonify({"message": "Invalid user type"}), 400
+
+    users = cursor.fetchall()
+    return jsonify([{
+        'id': user['id'],
+        'name': user['name'],
+        'role': user['role']
+    } for user in users])
+
+@app.route('/get_user_profile')
+def get_user_profile():
+    user_id = request.args.get('id')
+    if not user_id:
+        return jsonify({"message": "User ID is required"}), 400
+
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    user = cursor.fetchone()
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    # Fetch borrowed books
+    cursor.execute("SELECT * FROM borrowed_books WHERE user_id = %s", (user_id,))
+    borrowed_books = cursor.fetchall()
+
+    # Fetch penalties without filtering by status
+    cursor.execute("SELECT SUM(penalty_amount) as total_penalties FROM penalties WHERE user_id = %s", (user_id,))
+    penalty_result = cursor.fetchone()
+    total_penalties = penalty_result['total_penalties'] if penalty_result['total_penalties'] else 0
+
+    user_profile = {
+        "school_id": user["school_id"],
+        "name": user["name"],
+        "role": user["role"],
+        "rfid_number": user["rfid_number"],
+        "email": user["email"],
+        "contact_number": user["contact_number"],
+        "gender": user["gender"],
+        "year_level": user["year_level"],
+        "course": user["course"],
+        "department": user["department"],
+        "borrowedBooks": borrowed_books,
+        "penalties": total_penalties
+    }
+
+    return jsonify(user_profile)
+
+@app.route('/get_users_user_profile')
+def get_users_user_profile():
+    school_id = request.args.get('school_id')
+    if not school_id:
+        return jsonify({"message": "School ID is required"}), 400
+
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM users WHERE school_id = %s", (school_id,))
+    user = cursor.fetchone()
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    user_profile = {
+        "school_id": user["school_id"],
+        "name": user["name"],
+        "role": user["role"],
+        "rfid_number": user["rfid_number"],
+        "email": user["email"],
+        "contact_number": user["contact_number"],
+        "gender": user["gender"],
+        "year_level": user["year_level"],
+        "course": user["course"],
+        "department": user["department"],
+    }
+
+    return jsonify(user_profile)
+
+@app.route('/profile')
+def profile():
+    user_id = request.args.get('id')
+    return render_template("profile.html", user_id=user_id)
+
+@app.route('/get_borrowed_books', methods=['GET'])
+def get_borrowed_books():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"message": "User not logged in."}), 401
+
+    db, cursor = get_db()
+    cursor.execute("""
+        SELECT b.title, b.author, b.isbn, bb.borrow_date, bb.due_date, bb.id, b.barcode 
+        FROM borrowed_books bb 
+        JOIN books b ON bb.book_id = b.id 
+        WHERE bb.user_id = %s AND bb.status = 'borrowed'
+    """, (user_id,))
+    borrowed_books = cursor.fetchall()
+    cursor.close()
+
+    return jsonify(borrowed_books)
+
+@app.route('/mark_penalty_paid', methods=['POST'])
+def mark_penalty_paid():
+    data = request.get_json()
+    user_id = data['userId']
+    db, cursor = get_db()
+
+    cursor.execute("UPDATE penalties SET status = 'Paid' WHERE user_id = %s AND status = 'Unpaid'", (user_id,))
+    db.commit()
+
+    return jsonify({"message": "Penalty marked as paid!"}), 200
+
+@app.route("/view_books")
+def view_books():
+    classifications = [
+        "General Works (A)",
+        "Philosophy Psychology Religion (B)",
+        "Auxiliary Sciences of History (C)",
+        "World History and History of Europe Asia Africa Australia New Zealand (D)",
+        "History of the Americas (E)",
+        "Local History of the Americas (F)",
+        "Geography, Anthropology, Recreation (G)",
+        "Social Sciences (H)",
+        "Political Science (J)",
+        "Law (K)",
+        "Education (L)",
+        "Music and Books on Music (M)",
+        "Fine Arts (N)",
+        "Language and Literature (P)",
+        "Science (Q)",
+        "Medicine (R)",
+        "Agriculture (S)",
+        "Technology (T)",
+        "Military Science (U)",
+        "Naval Science (V)",
+        "Bibliography Library Science Information Resources (Z)"
+    ]
+    return render_template("view_books.html", classifications=classifications)
+
+@app.route('/books/<classification>', methods=['GET'])
+def books_by_classification(classification):
+    db, cursor = get_db()
+    print(f"Fetching books for classification: {classification}")  # Debugging line
+    cursor.execute("SELECT * FROM books WHERE lcc_classification LIKE %s", (f'%{classification}%',))
+    books = cursor.fetchall()
+    print(f"Books found: {books}")  # Debugging line
+    cursor.close()
+    return jsonify(books)  # Return the books as JSON
+
+@app.route('/get_books', methods=['GET'])
+def get_books():
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM books")
+    books = cursor.fetchall()
+    cursor.close()
+    return jsonify([{
+        'title': book['title'],
+        'author': book['author'],
+        'isbn': book['isbn'],
+        'lcc_classification': book['lcc_classification'].split(', ') if book['lcc_classification'] else [],
+        'publisher': book['publisher'],
+        'publication_date': book['publication_date'],
+        'edition': book['edition'],
+        'barcode': book['barcode']
+    } for book in books])
+
+@app.route('/book/<int:book_id>', methods=['GET'])
+def book_details(book_id):
+    db, cursor = get_db()
+
+    # Fetch the book details
+    cursor.execute("SELECT * FROM books WHERE id = %s", (book_id,))
+    book = cursor.fetchone()
+
+    if not book:
+        return jsonify({"message": "Book not found"}), 404
+
+    # Fetch borrowing history
+    cursor.execute("""
+        SELECT u.name AS borrower_name, b.borrow_date, u.school_id, u.rfid_number, u.role, b.status
+        FROM borrowed_books b 
+        JOIN users u ON b.user_id = u.id 
+        WHERE b.book_id = %s
+    """, (book_id,))
+    borrow_history = cursor.fetchall()
+
+    # Close the database connection
+    cursor.close()
+    db.close()
+
+    # Convert book and history to dictionary format
+    book_data = {
+        "id": book["id"],
+        "title": book["title"],
+        "author": book["author"],
+        "isbn": book["isbn"],
+        "publisher": book["publisher"],
+        "publication_date": book["publication_date"],
+        "edition": book["edition"],
+        "barcode": book["barcode"],
+        "image_url": book.get("image_url", "/static/default_image_url.jpg"),
+        "borrow_history": [
+            {
+                "borrower_name": record["borrower_name"],
+                "school_id": record["school_id"],
+                "rfid_number": record["rfid_number"],
+                "role": record["role"],
+                "borrow_date": record["borrow_date"],
+                "status": record["status"],
+            }
+            for record in borrow_history
+        ]
+    }
+
+    # Check if the request is an AJAX request
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify(book_data)  # Return JSON for AJAX requests
+    else:
+        return render_template("book_log.html", book=book_data)  # Render HTML if accessed directly
+
+@app.route('/user/book/<int:book_id>', methods=['GET'])
+def book_details_user(book_id):
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM books WHERE id = %s", (book_id,))
+    book = cursor.fetchone()
+    if not book:
+        return jsonify({"message": "Book not found"}), 404
+
+    return jsonify({
+        'title': book['title'],
+        'author': book['author'],
+        'publication_date': book['publication_date'],
+        'isbn': book['isbn'],
+        'barcode': book['barcode'],
+        'status': book['status'],
+        'publisher': book['publisher'],  # Add publisher
+        'edition': book['edition'],      # Add edition
+        'lcc_classification': book['lcc_classification']  # Add LCC classification
+    })
+
+@app.route('/track_borrowed_books', methods=['GET'])
+def track_borrowed_books():
+    db, cursor = get_db()
+
+    # Fetch borrowed books with details including the role of the borrower
+    cursor.execute("""
+        SELECT b.title, b.isbn, u.name AS borrower_name, u.role, bb.borrow_date 
+        FROM borrowed_books bb
+        JOIN books b ON bb.book_id = b.id
+        JOIN users u ON bb.user_id = u.id
+        WHERE bb.status = 'borrowed'
+    """)
+    borrowed_books = cursor.fetchall()
+
+    return render_template("track_borrowed_books.html", borrowed_books=borrowed_books)
+
+@app.route('/borrowing_rules', methods=['GET'])
+def borrowing_rules():
+    return render_template("borrowing_rules.html")
+
+@app.route("/search_books", methods=["GET"])
+def search_books():
+    query = request.args.get('query')
+    if not query:
+        return jsonify({"message": "Query parameter is required."}), 400
+
+    db, cursor = get_db()
+    cursor.execute("""
+        SELECT id, title, author, isbn, image_url 
+        FROM books 
+        WHERE title LIKE %s OR author LIKE %s OR isbn LIKE %s
+    """, (f'%{query}%', f'%{query}%', f'%{query}%'))
+
+    books = cursor.fetchall()
+    cursor.close()
+
+    return jsonify(books)
+
+@app.route("/get_borrowing_history", methods=["GET"])
+def get_borrowing_history():
+    school_id = request.args.get('school_id')
+    if not school_id:
+        return jsonify({"message": "School ID is required."}), 400
+
+    db, cursor = get_db()
+    cursor.execute("""
+        SELECT b.title, b.author, bb.borrow_date, bb.due_date, bb.return_date, bb.status 
+        FROM borrowed_books bb 
+        JOIN books b ON bb.book_id = b.id 
+        JOIN users u ON bb.user_id = u.id 
+        WHERE u.school_id = %s
+    """, (school_id,))
+    borrowing_history = cursor.fetchall()
+    cursor.close()
+
+    return jsonify(borrowing_history)
+
+@app.route("/get_penalties", methods=["GET"])
+def get_penalties():
+    school_id = request.args.get('school_id')
+    if not school_id:
+        return jsonify({"message": "School ID is required."}), 400
+
+    db, cursor = get_db()
+    cursor.execute("""
+        SELECT b.title, bb.due_date, DATEDIFF(CURDATE(), bb.due_date) AS days_overdue, 
+               1 AS daily_fine, 
+               DATEDIFF(CURDATE(), bb.due_date) * 1 AS total_fine 
+        FROM borrowed_books bb 
+        JOIN books b ON bb.book_id = b.id 
+        JOIN users u ON bb.user_id = u.id
+        WHERE u.school_id = %s AND bb.return_date IS NULL AND CURDATE() > bb.due_date
+    """, (school_id,))
+    penalties = cursor.fetchall()
+    cursor.close()
+
+    return jsonify(penalties)
+
+@app.route("/get_available_books", methods=["GET"])
+def get_available_books():
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM books WHERE status = 'Available'")
+    books = cursor.fetchall()
+    cursor.close()
+    return jsonify(books)
+
+@app.route('/reserve_book', methods=['POST'])
+def reserve_book():
+    db, cursor = get_db()
+    data = request.json
+    school_id = data['school_id']
+    book_id = data['book_id']
+
+    # Retrieve user_id from school_id
+    cursor.execute("SELECT id FROM users WHERE school_id = %s", (school_id,))
+    user = cursor.fetchone()
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    user_id = user["id"]
+    reservation_date = datetime.now()
+
+    cursor.execute("""
+        INSERT INTO reservations (user_id, book_id, reservation_date, status) 
+        VALUES (%s, %s, %s, 'reserved')
+    """, (user_id, book_id, reservation_date))
+
+    db.commit()
+    return jsonify({"message": "Book reserved successfully!"}), 201
+
+# Kiosk Part
+@app.route("/rfid_login", methods=["POST"])
+def rfid_login():
+    db, cursor = get_db()
+    data = request.json
+    rfid_number = data.get("rfid").strip()[:10]  # Trim and ensure 10-digit format
+
+    print(f"Received RFID from scanner: '{rfid_number}' (Length: {len(rfid_number)})")  # Debugging log
+
+    # Include 'rfid_number' in the SELECT statement
+    cursor.execute("SELECT id, name, role, rfid_number FROM users WHERE rfid_number = %s", (rfid_number,))
+    user = cursor.fetchone()
+
+    if user:
+        print(f"Match Found in DB -> Name: {user['name']}, Stored RFID: '{user['rfid_number']}'")
+        session["user_id"] = user["id"]
+        return jsonify({"success": True, "redirect": "/kiosk_dashboard", "user_id": user["id"], "name": user["name"], "role": user["role"]})
+    else:
+        print("RFID not found in database!")
+        return jsonify({"success": False, "message": "Access Denied"}), 401
+
+@app.route("/kiosk")
+def kiosk():
+    return render_template("kioskma.html")  # Ensure the file exists in templates/
+
+@app.route("/kiosk_dashboard")
+def kiosk_dashboard():
+    if "user_id" not in session:
+        return jsonify({"message": "Unauthorized"}), 401  # Ensure session security
+
+    return render_template("kiosk_dashboard.html")
+
+@app.route("/kiosk_search_books", methods=["GET"])
+def kiosk_search_books():
+    query = request.args.get('query')
+    if not query:
+        return jsonify({"message": "Query parameter is required."}), 400
+
+    db, cursor = get_db()
+    cursor.execute("""
+        SELECT id, title, author, isbn, image_url, status
+        FROM books 
+        WHERE title LIKE %s OR author LIKE %s OR isbn LIKE %s
+    """, (f'%{query}%', f'%{query}%', f'%{query}%'))
+
+    books = cursor.fetchall()
+    cursor.close()
+
+    return jsonify(books)
+
+@app.route("/get_kiosk_user_profile")
+def get_kiosk_user_profile():
+    if "user_id" not in session:
+        return jsonify({"message": "Unauthorized"}), 401
+
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM users WHERE id = %s", (session["user_id"],))
+    user = cursor.fetchone()
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    user_profile = {
+        "id": user["id"],
+        "name": user["name"],
+        "role": user["role"],
+        "rfid_number": user["rfid_number"],
+        "school_id": user["school_id"],
+        "email": user["email"]
+    }
+
+    return jsonify(user_profile)
+
+@app.route('/borrow_book', methods=['POST'])
+def borrow_book():
+    db, cursor = get_db()
+    data = request.json
+    book_id = data.get('book_id')
+
+    # Get the user_id from the session
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"message": "User not logged in."}), 401
+
+    # Get the current date and calculate the due date
+    borrow_date = datetime.now()
+    due_date = borrow_date + timedelta(days=7)  # Assuming a 7-day loan period
+
+    try:
+        # Fetch user details for the receipt
+        cursor.execute("""
+            SELECT name, rfid_number, school_id, role 
+            FROM users 
+            WHERE id = %s
+        """, (user_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"message": "User not found."}), 404
+
+        # Fetch book details
+        cursor.execute("SELECT * FROM books WHERE id = %s", (book_id,))
+        book = cursor.fetchone()
+
+        if not book:
+            return jsonify({"message": "Book not found."}), 404
+
+        # Prepare receipt data
+        receipt_data = {
+            "borrower_name": user["name"],
+            "rfid_number": user["rfid_number"],
+            "school_id": user["school_id"],
+            "role": user["role"],
+            "date_borrowed": borrow_date.strftime("%Y-%m-%d"),
+            "due_date": due_date.strftime("%Y-%m-%d"),
+            "book_details": {
+                "id": book_id,
+                "title": book["title"],
+                "author": book["author"],
+                "isbn": book["isbn"]
+            }
+        }
+
+        return jsonify({"message": "Book borrowing initiated.", "receipt": receipt_data}), 200
+    except mysql.connector.Error as err:
+        print(f"Error fetching data: {err}")
+        return jsonify({"message": str(err)}), 400
+    finally:
+        cursor.close()
+
+@app.route('/confirm_borrow', methods=['POST'])
+def confirm_borrow():
+    db, cursor = get_db()
+    data = request.json
+    book_id = data.get('book_id')
+
+    # Debugging: Log the book_id
+    print(f"Received book_id: {book_id} (Type: {type(book_id)})")
+
+    # Ensure book_id is an integer
+    try:
+        book_id = int(book_id)
+    except (ValueError, TypeError):
+        return jsonify({"message": "Invalid book_id. Must be an integer."}), 400
+
+    # Get the user_id from the session
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"message": "User not logged in."}), 401
+
+    # Get the current date and calculate the due date
+    borrow_date = datetime.now()
+    due_date = borrow_date + timedelta(days=7)  # Assuming a 7-day loan period
+
+    try:
+        # Insert the borrowing record into the database
+        cursor.execute("""
+            INSERT INTO borrowed_books (user_id, book_id, borrow_date, due_date, status) 
+            VALUES (%s, %s, %s, %s, 'borrowed')
+        """, (user_id, book_id, borrow_date, due_date))
+
+        db.commit()
+
+        return jsonify({"message": "Book borrowing confirmed!"}), 201
+    except mysql.connector.Error as err:
+        print(f"Error confirming borrow: {err}")
+        return jsonify({"message": str(err)}), 400
+    finally:
+        cursor.close()
+
+@app.route('/get_book_by_barcode', methods=['GET'])
+def get_book_by_barcode():
+    barcode = request.args.get('barcode')
+
+    if not barcode:
+        return jsonify({"message": "Barcode is required."}), 400
+
+    # Clean the barcode (remove hyphens and spaces)
+    cleaned_barcode = barcode.replace("-", "").strip()
+
+    print(f"Received barcode: {barcode} -> Cleaned barcode: {cleaned_barcode}")  # Debugging
+
+    db, cursor = get_db()
+    cursor.execute("SELECT * FROM books WHERE barcode = %s", (cleaned_barcode,))
+    book = cursor.fetchone()
+
+    if not book:
+        return jsonify({"message": "No book found in the system."}), 404  # Updated message
+
+    return jsonify({
+        'id': book['id'],
+        'title': book['title'],
+        'author': book['author'],
+        'isbn': book['isbn'],
+        'publisher': book['publisher'],
+        'publication_date': book['publication_date'],
+        'edition': book['edition'],
+        'barcode': book['barcode'],
+        'image_url': book['image_url']
+    })
+
+@app.route('/return_book', methods=['POST'])
+def return_book():
+    data = request.get_json()
+    book_id = data.get('book_id')
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return jsonify({"message": "User not logged in."}), 401
+
+    db, cursor = get_db()
+
+    # Fetch the book details to calculate penalties
+    cursor.execute("""
+        SELECT due_date FROM borrowed_books 
+        WHERE book_id = %s AND user_id = %s AND return_date IS NULL
+    """, (book_id, user_id))
+    book_record = cursor.fetchone()
+
+    if not book_record:
+        return jsonify({"message": "Book not found or already returned."}), 404
+
+    due_date = book_record['due_date']
+    return_date = datetime.now()
+
+    # Calculate penalty
+    penalty_amount = calculate_penalty(due_date, return_date)
+
+    # Update the borrowed_books table
+    cursor.execute("""
+        UPDATE borrowed_books 
+        SET return_date = NOW(), status = 'returned' 
+        WHERE book_id = %s AND user_id = %s AND return_date IS NULL
+    """, (book_id, user_id))
+    db.commit()
+
+    # Optionally, record the penalty
+    if penalty_amount > 0:
+        cursor.execute("""
+            INSERT INTO penalties (user_id, penalty_amount) 
+            VALUES (%s, %s)
+        """, (user_id, penalty_amount))
+        db.commit()
+
+    # Prepare receipt data
+    receipt_data = {
+        "book_id": book_id,
+        "return_date": return_date.strftime("%Y-%m-%d"),
+        "penalty_amount": penalty_amount
+    }
+
+    return jsonify({"message": "Book returned successfully!", "receipt": receipt_data}), 200
+
+# Define the penalty calculation function
+def calculate_penalty(due_date, return_date):
+    if return_date <= due_date:
+        return 0  # No penalty if returned on time
+
+    # Calculate the number of overdue days
+    overdue_days = (return_date - due_date).days
+    penalty_rate = 1  # Example penalty rate per day
+    return overdue_days * penalty_rate
+
+@app.route('/get_unreturned_books', methods=['GET'])
+def get_unreturned_books():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"message": "User  not logged in."}), 401
+
+    db, cursor = get_db()
+    cursor.execute("""
+        SELECT b.title, b.author, b.isbn, bb.borrow_date, bb.due_date, bb.id 
+        FROM borrowed_books bb 
+        JOIN books b ON bb.book_id = b.id 
+        WHERE bb.user_id = %s AND bb.return_date IS NULL
+    """, (user_id,))
+    unreturned_books = cursor.fetchall()
+
+    # Calculate penalties for each unreturned book
+    today = datetime.now()
+    for book in unreturned_books:
+        due_date = book['due_date']
+        penalty_amount = calculate_penalty(due_date, today)
+        book['penalty'] = penalty_amount  # Add penalty to the book record
+
+    cursor.close()
+    return jsonify(unreturned_books)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Kiosk Dashboard</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+        <style>
+            /* General Styles */
+
+            body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+           .sidebar {
+    width: 220px; /* Fixed width for the sidebar */
+    background: #343a40;
+    color: white;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Fixed height for the sidebar */
+    overflow-y: auto; /* Allow scrolling if content overflows */
+        }
+
+            .sidebar h2 {
+                text-align: center;
+            }
+
+            .sidebar div {
+                margin: 10px 0;
+                padding: 10px;
+                background: #34495e;
+                text-align: center;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+
+            .sidebar div:hover {
+                background: #1abc9c;
+            }
+
+       .content {
+    flex-grow: 1;
+    padding: 5px; /* Reduced from 20px */
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 5px; /* Reduced from 20px */
+    max-width: calc(100% - 220px); /* Adjusted to match sidebar width */
+    overflow-y: auto;
+}
+
+            .top-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                background: #2980b9;
+                padding: 10px;
+                border-radius: 5px;
+                color: white;
+            }
+
+            .top-bar .search-container {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+
+            .top-bar .search-bar {
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 20px;
+                width: 400px;
+                font-size: 16px;
+            }
+
+            .top-bar .search-button {
+                padding: 10px 20px;
+                background: #1abc9c;
+                border: none;
+                cursor: pointer;
+                color: white;
+                font-size: 16px;
+                border-radius: 20px;
+                margin-left: 10px;
+            }
+
+            .top-bar .search-button:hover {
+                background: #16a085;
+            }
+
+            .autocomplete-box {
+                position: absolute;
+                top: 40px;
+                left: 0;
+                width: 100%;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                max-height: 200px;
+                overflow-y: auto;
+                display: none;
+                z-index: 10;
+            }
+
+            .autocomplete-box div {
+                padding: 10px;
+                cursor: pointer;
+                border-bottom: 1px solid #ddd;
+                background: white;
+                color: black;
+                font-size: 16px;
+            }
+
+            .autocomplete-box div:hover {
+                background: #f1f1f1;
+            }
+
+            .profile-button {
+                padding: 10px 20px;
+                background: #1abc9c;
+                border: none;
+                cursor: pointer;
+                color: white;
+                font-size: 16px;
+                border-radius: 20px;
+            }
+
+            .profile-button:hover {
+                background: #16a085;
+            }
+
+           .main-content {
+    flex: 1;
+    background: #ecf0f1; /* Gray background */
+    padding: 0; /* No padding */
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+            .book-details {
+                display: flex;
+                align-items: flex-start;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                max-width: 965px;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .book-image {
+                width: 150px;
+                height: auto;
+                margin-right: 20px;
+                border-radius: 5px;
+            }
+
+            .book-info {
+                flex: 1;
+                width: 100%;
+            }
+
+            .borrow-history-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                background: white;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            .borrow-history-table th, .borrow-history-table td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: left;
+            }
+
+            .borrow-history-table th {
+                background: #2980b9;
+                color: white;
+            }
+
+            .book-status {
+                font-size: 18px;
+                font-weight: bold;
+                margin-top: 10px;
+                padding: 5px 10px;
+                border-radius: 5px;
+                display: inline-block;
+            }
+
+            .status-available {
+                color: green;
+                background: #d4edda;
+                border: 1px solid green;
+            }
+
+            .status-checkedout {
+                color: red;
+                background: #f8d7da;
+                border: 1px solid red;
+            }
+
+            .reserve-button {
+                display: block;
+                margin-top: 15px;
+                padding: 10px 20px;
+                background: #1abc9c;
+                border: none;
+                cursor: pointer;
+                color: white;
+                font-size: 16px;
+                border-radius: 20px;
+                width: 100%;
+                max-width: 200px;
+            }
+
+            .reserve-button:hover {
+                background: #16a085;
+            }
+
+            /* Receipt-specific styling */
+            .book-kiosk-details {
+                display: flex;
+                flex-direction: column;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                max-width: 965px;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .book-kiosk-details h2 {
+                margin: 0 0 10px;
+                text-align: center;
+            }
+
+            .book-kiosk-details p {
+                margin: 5px 0;
+                text-align: left;
+            }
+
+            .book-kiosk-details button {
+                margin-top: 15px;
+                padding: 10px 20px;
+                background: #1abc9c;
+                border: none;
+                cursor: pointer;
+                color: white;
+                font-size: 16px;
+                border-radius: 20px;
+                width: 100%;
+                max-width: 200px;
+            }
+
+            .book-kiosk-details button:hover {
+                background: #16a085;
+            }
+
+         /* Receipt Popup for 57mm x 30mm Thermal Paper */
+    .receipt-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        width: 215px; /* 57mm in pixels */
+        max-width: 215px; /* Ensure it doesn't exceed the paper width */
+        text-align: center;
+        font-family: Arial, sans-serif;
+    }
+
+    .receipt-popup h3 {
+        margin: 0 0 10px;
+        font-size: 14px; /* Adjusted for small paper */
+        color: #2c3e50;
+    }
+
+    .receipt-popup p {
+        margin: 5px 0;
+        font-size: 10px; /* Adjusted for small paper */
+        color: #34495e;
+        text-align: left;
+    }
+
+    .receipt-popup .receipt-header {
+        font-size: 12px; /* Adjusted for small paper */
+        font-weight: bold;
+        color: #2980b9;
+        margin-bottom: 10px;
+    }
+
+    .receipt-popup .receipt-book-details {
+        background: #f9f9f9;
+        padding: 8px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+    }
+
+    .receipt-popup .receipt-book-details h4 {
+        margin: 0 0 8px;
+        font-size: 12px; /* Adjusted for small paper */
+        color: #2c3e50;
+    }
+
+    .receipt-popup .receipt-book-details p {
+        margin: 4px 0;
+        font-size: 10px; /* Adjusted for small paper */
+        color: #34495e;
+    }
+
+    .receipt-popup .consequences {
+        background: #f9f9f9;
+        padding: 8px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+    }
+
+    .receipt-popup .consequences h4 {
+        margin: 0 0 8px;
+        font-size: 12px; /* Adjusted for small paper */
+        color: #2c3e50;
+    }
+
+    .receipt-popup .consequences p {
+        margin: 4px 0;
+        font-size: 10px; /* Adjusted for small paper */
+        color: #34495e;
+    }
+
+    .receipt-popup button {
+        margin-top: 10px;
+        padding: 8px 16px;
+        background: #1abc9c;
+        border: none;
+        color: white;
+        font-size: 10px; /* Adjusted for small paper */
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .receipt-popup button:hover {
+        background: #16a085;
+    }
+
+    .receipt-popup .receipt-footer {
+        margin-top: 10px;
+        font-size: 8px; /* Adjusted for small paper */
+        color: #7f8c8d;
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+             /* Receipt Book Details */
+    .receipt-book-details {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+
+    .receipt-book-details h4 {
+        margin: 0 0 10px;
+        text-align: left;
+    }
+
+    .receipt-book-details p {
+        margin: 5px 0;
+        text-align: left;
+    }
+
+         .books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Adjust card width */
+    gap: 15px;
+    padding: 15px;
+}
+.card {
+    display: flex;
+    flex-direction: row; /* Align items in a row */
+    margin-bottom: 10px; /* Space between cards */
+    border: 1px solid #ddd; /* Add a border around the card */
+    border-radius: 5px; /* Rounded corners for the card */
+    overflow: hidden; /* Hide overflow */
+    height: 250px; /* Increased height for more content space */
+
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background: white;
+}
+
+
+/* Image */
+  .card img {
+    width: 100px; /* Fixed width for the image */
+    height: 120px; /* Fixed height for the image */
+    object-fit: cover; /* Ensure the image covers the area without distortion */
+    margin: 5px; /* Add margin around the image */
+}
+
+    .card-body {
+    display: flex;
+    flex-direction: column; /* Stack text vertically */
+    justify-content: space-between; /* Space out text and button */
+    padding: 15px; /* Adjust padding for the card body */
+    flex-grow: 1; /* Allow the body to take up remaining space */
+     margin-left: 15px; /* Move text further to the right */
+}
+
+    /* Title and Text */
+    .card-title {
+        margin: 0; /* Remove margin for title */
+        font-size: 0.9rem; /* Adjusted font size for the title */
+        overflow: hidden; /* Hide overflow */
+        text-overflow: ellipsis; /* Add ellipsis for overflow text */
+        white-space: normal; /* Allow text to wrap */
+        margin-bottom: 5px; /* Add space below the title */
+    }
+
+    .card-text {
+        margin: 0; /* Remove margin for text elements */
+        padding: 2px 0; /* Add a little padding for spacing */
+        font-size: 0.9rem; /* Adjusted font size for text */
+        overflow: hidden; /* Hide overflow */
+        text-overflow: ellipsis; /* Add ellipsis for overflow text */
+        white-space: normal; /* Allow text to wrap */
+        margin-bottom: 5px; /* Add space below each text element */
+    }
+
+    /* Button */
+    .btn-view-details {
+        align-self: flex-start; /* Align button to the left */
+        padding: 5px 10px;
+        font-size: 0.85rem; /* Adjusted font size for buttons */
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: auto; /* Push button to bottom */
+    }
+
+    .btn-view-details:hover {
+        background-color: #0056b3;
+    }
+
+        </style>
+    </head>
+    <body>
+        <div class="sidebar">
+            <h2>Kiosk Dashboard</h2>
+            <div onclick="viewBooks()">View Books</div>
+            <div onclick="borrowBook()">Borrow Book</div>
+            <div onclick="returnBook()">Return Book</div>
+            <div onclick="viewBorrowingHistory()">Borrowing History</div>
+            <div onclick="goToBorrowingRules()">Library Borrowing Rules</div>
+        </div>
+        <div class="content">
+            <div class="top-bar">
+                <div><strong>Dashboard</strong></div>
+                <div class="search-container">
+                    <input type="text" class="search-bar" placeholder="Search for books..." id="searchInput" onkeyup="fetchBookSuggestions()">
+                    <button class="search-button" onclick="searchBooks()">🔍 Search</button>
+                    <div class="autocomplete-box" id="autocompleteBox"></div>
+                </div>
+                <div>
+                    <button class="profile-button" onclick="viewProfile()" id="profileButton">User Name</button>
+                    <button class="profile-button" onclick="logout()">
+                        <i class="fas fa-power-off"></i> Logout
+                    </button>
+                </div>
+            </div>
+            <div class="main-content" id="booksContainer">
+                <!-- Books will be dynamically loaded here -->
+
+            </div>
+        </div>
+
+         <!-- Receipt Popup -->
+    <div id="receiptPopup" class="receipt-popup" style="display: none;">
+        <h3>Library Borrowing Receipt</h3>
+        <p><strong>Borrower:</strong> <span id="borrowerName"></span></p>
+        <p><strong>RFID:</strong> <span id="rfidNumber"></span></p>
+        <p><strong>School ID:</strong> <span id="schoolId"></span></p>
+        <p><strong>Role:</strong> <span id="role"></span></p>
+        <p><strong>Borrowed:</strong> <span id="dateBorrowed"></span></p>
+        <p><strong>Due:</strong> <span id="dueDate"></span></p>
+        <div class="receipt-book-details">
+            <h4>Book Details</h4>
+            <p><strong>Title:</strong> <span id="bookTitle"></span></p>
+            <p><strong>Author:</strong> <span id="bookAuthor"></span></p>
+            <p><strong>ISBN:</strong> <span id="bookIsbn"></span></p>
+        </div>
+        <div class="consequences">
+            <h4>Late Returns</h4>
+            <p>Regular: ₱1/day</p>
+            <p>Reserve: ₱3/day</p>
+        </div>
+        <button onclick="confirmBorrowing()">Confirmed Borrow</button>
+        <button onclick="closeReceipt()">Cancel</button>
+        <div class="receipt-footer">
+            Thank you for using our library!
+        </div>
+    </div>
+    <input type="hidden" id="bookId" value=""> <!-- Hidden field for book_id -->
+    </div>
+
+        <div id="returnBookContainer" style="display: none;">
+    <h2>Return Book</h2>
+    <input type="text" id="barcodeInput" placeholder="Scan the book's barcode" />
+    <button onclick="processReturn()">Return Book</button>
+    <div id="returnMessage"></div>
+</div>
+
+        <script>
+  document.addEventListener("DOMContentLoaded", function() {
+            viewBooks(); // Load books immediately after the page loads
+        });
+
+        async function viewBooks() {
+            try {
+                const response = await fetch('/get_books');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch books');
+                }
+                const books = await response.json();
+                displayBooks(books);
+            } catch (error) {
+                console.error('Error fetching books:', error);
+                alert('Failed to load books. Please try again.');
+            }
+        }
+function displayBooks(books) {
+    const booksContainer = document.getElementById('booksContainer');
+    booksContainer.innerHTML = ''; // Clear previous content
+
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'books-grid';
+
+    books.forEach(book => {
+        console.log("Book ID:", book.id, "Image URL:", book.image_url); // Debug the image URL
+
+        if (!book.image_url) {
+            console.error("No image URL provided for book:", book.title);
+            return; // Skip this book or handle the error
+        }
+
+        const bookCard = document.createElement('div');
+        bookCard.className = 'card';
+        bookCard.innerHTML = `
+            <img src="${book.image_url}" alt="${book.title}" style="width: 100px; height: 120px; margin-bottom: 10px;">
+            <div class="card-body">
+                <h3 class="card-title">${book.title}</h3>
+                <p class="card-text"><strong>Author:</strong> ${book.author}</p>
+                <p class="card-text"><strong>ISBN:</strong> ${book.isbn}</p>
+                <p class="card-text"><strong>Barcode:</strong> ${book.barcode}</p>
+                <button class="btn-view-details" onclick="viewBookDetails(${book.id})">View Details</button>
+            </div>
+        `;
+        gridContainer.appendChild(bookCard);
+    });
+
+    booksContainer.appendChild(gridContainer);
+}
+
+            // Fetch book suggestions dynamically from the Flask API
+            function fetchBookSuggestions() {
+                let input = document.getElementById("searchInput").value.trim();
+                let autocompleteBox = document.getElementById("autocompleteBox");
+
+                if (input === "") {
+                    autocompleteBox.style.display = "none";
+                    return;
+                }
+
+                fetch(`/kiosk_search_books?query=${input}`)
+                    .then(response => response.json())
+                    .then(books => {
+                        if (books.length === 0) {
+                            autocompleteBox.style.display = "none";
+                            return;
+                        }
+
+                        autocompleteBox.innerHTML = books.map(book => `
+                            <div onclick="viewBookDetails(${book.id})">${book.title}</div>
+                        `).join("");
+
+                        autocompleteBox.style.display = "block";
+                    })
+                    .catch(error => console.error("Error fetching books:", error));
+            }
+
+    async function viewBooks() {
+    try {
+        const response = await fetch('/get_books');
+        if (!response.ok) {
+            throw new Error('Failed to fetch books');
+        }
+        const books = await response.json();
+        console.log("Books data:", books); // Log the entire books data
+        displayBooks(books);
+    } catch (error) {
+        console.error('Error fetching books:', error);
+        alert('Failed to load books. Please try again.');
+    }
+}
+
+            // Function to display books in the dashboard
+            // Function to display books in the dashboard
+  function displayBooks(books) {
+    const booksContainer = document.getElementById('booksContainer');
+    booksContainer.innerHTML = ''; // Clear previous content
+
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'books-grid';
+
+    books.forEach(book => {
+       const bookImage = book.image_url ? book.image_url.trim() : '/static/default_image_url.jpg';
+    console.log("Image URL in displayBooks:", bookImage); // Debugging
+
+        const bookCard = document.createElement('div');
+        bookCard.className = 'card';
+        bookCard.innerHTML = `
+            <img src="${bookImage}" alt="${book.title}" style="width: 100px; height: 120px; margin-bottom: 10px;">
+            <div class="card-body">
+                <h3 class="card-title">${book.title}</h3>
+                <p class="card-text"><strong>Author:</strong> ${book.author}</p>
+                <p class="card-text"><strong>ISBN:</strong> ${book.isbn}</p>
+                <p class="card-text"><strong>Barcode:</strong> ${book.barcode}</p>
+                <button class="btn-view-details" onclick="viewBookDetails(${book.id})">View Details</button>
+            </div>
+        `;
+        gridContainer.appendChild(bookCard);
+    });
+
+    booksContainer.appendChild(gridContainer);
+}
+
+            // Fetch and display book details dynamically
+            async function viewBookDetails(bookId) {
+                console.log(`Fetching book details for ID: ${bookId}`);
+
+                try {
+                    let response = await fetch(`/book/${bookId}`, {
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Error loading book details");
+                    }
+
+                    let book = await response.json();
+                    console.log("Book data:", book);
+
+                    let bookImage = book.image_url && book.image_url.trim() !== ""
+                                    ? book.image_url
+                                    : "/static/default_image_url.jpg";
+
+                    const booksContainer = document.getElementById('booksContainer');
+                    booksContainer.innerHTML = `
+                        <div class="book-details">
+                            <img src="${bookImage}" class="book-image"
+                                onerror="this.onerror=null;this.src='/static/default_image_url.jpg';">
+                            <div class="book-info">
+                                <h1>${book.title}</h1>
+                                <p><strong>Author:</strong> ${book.author}</p>
+                                <p><strong>ISBN:</strong> ${book.isbn}</p>
+                                <p><strong>Publisher:</strong> ${book.publisher}</p>
+                                <p><strong>Publication Year:</strong> ${book.publication_date}</p>
+                                <p><strong>Edition:</strong> ${book.edition}</p>
+                                <p><strong>Barcode:</strong> ${book.barcode}</p>
+                            </div>
+                        </div>
+
+                        <h2>Borrowing History</h2>
+                        <table class="borrow-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Borrower Name</th>
+                                    <th>School ID</th>
+                                    <th>RFID Number</th>
+                                    <th>Role</th>
+                                    <th>Date Borrowed</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${book.borrow_history.map(record => `
+                                    <tr>
+                                        <td>${record.borrower_name}</td>
+                                        <td>${record.school_id}</td>
+                                        <td>${record.rfid_number}</td>
+                                        <td>${record.role}</td>
+                                        <td>${record.borrow_date}</td>
+                                        <td>${record.status}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <button class="profile-button" onclick="viewBooks()">Back to Books</button>
+                    `;
+                } catch (error) {
+                    console.error("Error fetching book details:", error);
+                    document.getElementById('booksContainer').innerHTML = `<p class='text-danger'>Error loading book details: ${error.message}</p>`;
+                }
+            }
+
+            // Borrow book function
+           async function borrowBook() {
+        const barcode = prompt("Please scan the book's ISBN barcode below:").trim();
+
+        if (barcode) {
+            // Fetch book details by barcode
+            const bookResponse = await fetch(`/get_book_by_barcode?barcode=${encodeURIComponent(barcode)}`);
+            if (!bookResponse.ok) {
+                const errorData = await bookResponse.json();
+                alert(errorData.message || "Book not found. Please scan again.");
+                return;
+            }
+            const book = await bookResponse.json();
+
+            // Fetch user details from the session or backend
+            const userResponse = await fetch("/get_kiosk_user_profile");
+            if (!userResponse.ok) {
+                alert("Failed to fetch user details. Please try again.");
+                return;
+            }
+            const user = await userResponse.json();
+
+            // Prepare receipt data
+            const receiptData = {
+                borrower_name: user.name,
+                rfid_number: user.rfid_number,
+                school_id: user.school_id,
+                role: user.role,
+                date_borrowed: new Date().toISOString().split('T')[0], // Current date
+                due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+                book_details: {
+                    id: book.id, // Ensure this is the correct field
+                    title: book.title,
+                    author: book.author,
+                    isbn: book.isbn
+                }
+            };
+
+            // Debugging: Log the receipt data
+            console.log("Receipt data:", receiptData);
+
+            // Display the receipt popup
+            displayReceipt(receiptData);
+        } else {
+            alert("No barcode scanned.");
+        }
+    }
+
+            // Function to display the receipt
+            function displayReceipt(receipt) {
+        document.getElementById("borrowerName").textContent = receipt.borrower_name;
+        document.getElementById("rfidNumber").textContent = receipt.rfid_number || "N/A"; // Handle null RFID
+        document.getElementById("schoolId").textContent = receipt.school_id || "N/A"; // Handle null School ID
+        document.getElementById("role").textContent = receipt.role || "N/A"; // Handle null Role
+        document.getElementById("dateBorrowed").textContent = receipt.date_borrowed;
+        document.getElementById("dueDate").textContent = receipt.due_date;
+        document.getElementById("bookTitle").textContent = receipt.book_details.title;
+        document.getElementById("bookAuthor").textContent = receipt.book_details.author;
+        document.getElementById("bookIsbn").textContent = receipt.book_details.isbn;
+
+
+    // Ensure the book_id is set correctly
+        document.getElementById("bookId").value = receipt.book_details.id;
+
+     console.log("Book ID set in receipt:", receipt.book_details.id);
+
+        document.getElementById("receiptPopup").style.display = "block";
+        document.getElementById("overlay").style.display = "block";
+    }
+
+           function printReceipt() {
+        const receiptContent = document.getElementById("receiptPopup").innerHTML;
+        const printWindow = window.open('', '', 'width=215,height=300'); // Set window size to match paper
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Print Receipt</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        h3 {
+                            font-size: 14px;
+                            text-align: center;
+                            margin: 0 0 10px;
+                        }
+                        p {
+                            font-size: 10px;
+                            margin: 5px 0;
+                            text-align: left;
+                        }
+                        .receipt-footer {
+                            font-size: 8px;
+                            text-align: center;
+                            margin-top: 10px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${receiptContent}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    async function processReturn() {
+    const barcode = document.getElementById('barcodeInput').value.trim();
+    if (!barcode) {
+        alert("Please scan a barcode.");
+        return;
+    }
+
+    // Fetch the user's borrowed books
+    const response = await fetch('/get_borrowed_books');
+    const borrowedBooks = await response.json();
+
+    // Check if the scanned barcode matches any borrowed book
+    const matchedBook = borrowedBooks.find(book => book.barcode === barcode);
+    if (!matchedBook) {
+        alert("No matching book found for this barcode.");
+        return;
+    }
+
+    // Proceed to return the book
+    const returnResponse = await fetch('/return_book', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ book_id: matchedBook.id })
+    });
+
+    const returnData = await returnResponse.json();
+    document.getElementById('returnMessage').innerText = returnData.message;
+
+    // Optionally, print the receipt or show it on the screen
+    if (returnResponse.ok) {
+        printReceipt(returnData.receipt); // Implement this function to handle receipt printing
+    }
+}
+
+    async function confirmBorrowing() {
+        const bookId = document.getElementById("bookId").value; // Get the book_id from the hidden field
+
+        // Debugging: Log the bookId
+        console.log("Book ID being sent:", bookId, "Type:", typeof bookId);
+
+        try {
+            // Send a request to confirm the borrowing
+            const response = await fetch("/confirm_borrow", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    book_id: parseInt(bookId, 10) // Ensure book_id is an integer
+                })
+            });
+
+            if (response.ok) {
+                // Print the receipt
+                printReceipt();
+
+                // Display a confirmation message
+                alert("Thank you for borrowing! Please don't forget to return the book on time.");
+
+                // Close the receipt popup
+                closeReceipt();
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || "Error confirming borrowing.");
+            }
+        } catch (error) {
+            console.error("Error confirming borrowing:", error);
+            alert("An error occurred while confirming the borrowing.");
+        }
+    }
+
+    function closeReceipt() {
+        // Hide the receipt popup and overlay
+        document.getElementById("receiptPopup").style.display = "none";
+        document.querySelector(".overlay").style.display = "none";
+
+        // Optionally, reset any borrowing-related data or state
+        resetBorrowingProcess();
+    }
+
+    function resetBorrowingProcess() {
+        // Reset any borrowing-related data or state here
+        console.log("Borrowing process canceled.");
+        // Example: Clear any temporary data or reset UI elements
+        document.getElementById("borrowerName").textContent = "";
+        document.getElementById("rfidNumber").textContent = "";
+        document.getElementById("schoolId").textContent = "";
+        document.getElementById("role").textContent = "";
+        document.getElementById("dateBorrowed").textContent = "";
+        document.getElementById("dueDate").textContent = "";
+        document.getElementById("bookTitle").textContent = "";
+        document.getElementById("bookAuthor").textContent = "";
+        document.getElementById("bookIsbn").textContent = "";
+    }
+
+async function returnBook() {
+    const response = await fetch('/get_unreturned_books');
+    const books = await response.json();
+
+    const tableBody = document.getElementById('unreturnedBooksTableBody');
+    tableBody.innerHTML = ''; // Clear previous content
+
+    books.forEach(book => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${book.title}</td>
+            <td>${book.author}</td>
+            <td>${book.isbn}</td>
+            <td>${new Date(book.borrow_date).toLocaleDateString()}</td>
+            <td>${new Date(book.due_date).toLocaleDateString()}</td>
+            <td>₱${book.penalty}</td>
+            <td><button class="btn btn-danger" onclick="confirmReturn(${book.id})">Return</button></td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    document.getElementById('unreturnedBooksContainer').style.display = 'block'; // Show the container
+}
+
+async function confirmReturn(bookId) {
+    const response = await fetch('/return_book', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ book_id: bookId })
+    });
+
+    if (response.ok) {
+        alert('Book returned successfully!');
+        returnBook(); // Refresh the list of unreturned books
+    } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error returning book.');
+    }
+}
+
+            function viewBorrowingHistory() {
+                console.log("Viewing borrowing history...");
+            }
+
+            function goToBorrowingRules() {
+                window.location.href = "/borrowing_rules";
+            }
+
+            function viewProfile() {
+                console.log("Viewing profile for:", document.getElementById("profileButton").textContent);
+            }
+
+            function logout() {
+                console.log("Logging out...");
+            }
+
+            // Hide autocomplete box when clicking outside
+            document.addEventListener("click", function(event) {
+                if (!event.target.closest(".search-container")) {
+                    document.getElementById("autocompleteBox").style.display = "none";
+                }
+            });
+
+        </script>
+    </body>
+    </html>

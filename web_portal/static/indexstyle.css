@@ -1,0 +1,75 @@
+/* indexstyle.css */
+
+body {
+    background-color: #f0f8ff; /* Light background color */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full height of the viewport */
+    margin: 0;
+}
+
+.overlay {
+    background-color: white; /* White background for the form */
+    padding: 40px; /* Padding around the form */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+    width: 400px; /* Fixed width for the form */
+    text-align: center; /* Center text inside the overlay */
+}
+
+.con {
+    display: flex;
+    flex-direction: column;
+}
+
+.head-form {
+    text-align: center;
+}
+
+.field-set {
+    margin-top: 20px;
+}
+
+.input-item {
+    position: relative;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.log-in {
+    background-color: #007bff; /* Bootstrap primary color */
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.log-in:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+}
+
+.other {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.btn {
+    background-color: transparent;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+}
+
+.btn:hover {
+    text-decoration: underline;
+}

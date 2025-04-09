@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Registration Page for UC Web Portal" />
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo192.png') }}" />
+    <title>Library Web Portal Registration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: "Roboto", sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .register-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+        input[type="text"], input[type="password"], input[type="email"], select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <h2>Register</h2>
+        <form id="registerForm" method="POST" action="http://127.0.0.1:5000/register">
+            <input type="text" id="username" name="username" placeholder="User Name" required /><br>
+            <select id="role" name="role" required>
+                <option value="" disabled selected>Select Role</option>
+                <option value="Student">Student</option>
+                <option value="Teacher">Teacher</option>
+            </select><br>
+            <input type="text" id="contact_number" name="contact_number" placeholder="Contact Number" required /><br>
+            <input type="email" id="email" name="email" placeholder="Email Address" required /><br>
+            <select id="gender" name="gender" required>
+                <option value="" disabled selected>Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select><br>
+            <div id="studentFields" style="display: none;">
+                <select id="year_level" name="year_level">
+                    <option value="" disabled selected>Select Year Level</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                    <option value="5">5th Year</option>
+                </select><br>
+                <select id="course" name="course">
+                    <option value="" disabled selected>Select Course</option>
+                    <option value="BSCoE">BSCoE - Bachelor of Science in Computer Engineering</option>
+                    <option value="BSIT">BSIT - Bachelor of Science in Information Technology</option>
+                    <option value="BSCS">BSCS - Bachelor of Science in Computer Science</option>
+                </select><br>
+            </div>
+            <div id="teacherFields" style="display: none;">
+                <select id="department" name="department">
+                    <option value="" disabled selected>Select Department</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="IT">Information Technology</option>
+                </select>
+            </div>
+            <input type="text" id="school_id" name="school_id" placeholder="School ID Number" required /><br>
+            <input type="password" id="password" name="password" placeholder="Password" required /><br>
+            <button type="submit">Register</button>
+        </form>
+        <p>Note: Proceed to the Library Front desk to claim the Library Card.</p>
+    </div>
+
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        const roleSelect = document.getElementById('role');
+        const studentFields = document.getElementById('studentFields');
+        const teacherFields = document.getElementById('teacherFields');
+        const yearLevel = document.getElementById('year_level');
+        const course = document.getElementById('course');
+        const department = document.getElementById('department');
+
+        roleSelect.addEventListener('change', function () {
+            if (this.value === 'Student') {
+                studentFields.style.display = 'block';
+                teacherFields.style.display = 'none';
+                yearLevel.setAttribute('required', 'true');
+                course.setAttribute('required', 'true');
+                department.removeAttribute('required');
+            } else if (this.value === 'Teacher') {
+                studentFields.style.display = 'none';
+                teacherFields.style.display = 'block';
+                department.setAttribute('required', 'true');
+                yearLevel.removeAttribute('required');
+                course.removeAttribute('required');
+            } else {
+                studentFields.style.display = 'none';
+                teacherFields.style.display = 'none';
+                yearLevel.removeAttribute('required');
+                course.removeAttribute('required');
+                department.removeAttribute('required');
+            }
+        });
+
+        registerForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const formData = {
+                username: document.getElementById('username').value.trim(),
+                role: document.getElementById('role').value,
+                contact_number: document.getElementById('contact_number').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                gender: document.getElementById('gender').value,
+                school_id: document.getElementById('school_id').value.trim(),
+                password: document.getElementById('password').value.trim(),
+                year_level: yearLevel?.value || null,
+                course: course?.value || null,
+                department: department?.value || null,
+            };
+
+            console.log('Submitting form:', formData);
+
+            try {
+                const response = await fetch(registerForm.action, {
+                    method: registerForm.method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
+                });
+
+                const result = await response.json();
+                console.log('Server response:', result);
+
+                if (response.ok) {
+                    alert(result.message);
+                    window.location.href = '/';
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Error during form submission:', error);
+                alert('Submission failed! Please check the console.');
+            }
+        });
+    </script>
+</body>
+</html>

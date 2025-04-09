@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile</title>
+</head>
+<body>
+    <h2>Welcome, {{ user.name }}!</h2>
+    <p>School ID: {{ user.school_id }}</p>
+    <p>Role: {{ user.role }}</p>
+    <p>Email: {{ user.email }}</p>
+    <a href="{{ url_for('logout') }}">Logout</a>
+</body>
+</html>

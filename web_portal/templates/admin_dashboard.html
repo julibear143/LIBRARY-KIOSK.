@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Admin Dashboard</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+     * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        display: flex;
+        height: 100vh;
+        background-color: #f4f4f4; /* Background color for the body */
+        font-family: Arial, sans-serif;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 250px;
+        background: #343a40;
+        color: white;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        height: 100vh; /* Fixed height for the sidebar */
+        overflow-y: auto; /* Allow scrolling if content overflows */
+        position: fixed; /* Keep sidebar fixed on the left */
+        top: 0;
+        left: 0;
+    }
+
+    .sidebar h3 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .sidebar a {
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center; /* Center the content horizontally */
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        transition: background 0.3s;
+        height: 50px; /* Fixed height for buttons */
+        text-align: center; /* Center the text */
+        flex-grow: 1; /* Allow the button to grow and fill the space */
+    }
+
+    .sidebar a:hover {
+        background: #495057;
+    }
+
+    /* Main Content */
+    .content {
+        flex-grow: 1;
+        padding: 20px;
+        background: white;
+        border-radius: 8px; /* Rounded corners for the content area */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow for the content area */
+        margin: 20px; /* Margin around the content area */
+        height: calc(100vh - 40px); /* Fixed height for the content area */
+        overflow-y: auto; /* Allow scrolling if content overflows */
+        margin-left: 270px; /* Sidebar width (250px) + some margin */
+        width: calc(100% - 270px); /* Ensure it does not overflow */
+    }
+
+    /* Card Layout */
+    .card {
+    display: flex;
+    flex-direction: row; /* Align items in a row */
+    margin-bottom: 20px; /* Space between cards */
+    border: 1px solid #ddd; /* Add a border around the card */
+    border-radius: 5px; /* Rounded corners for the card */
+    overflow: hidden; /* Hide overflow */
+    height: 250px; /* Increased height for more content space */
+}
+    /* Image */
+    .card img {
+        width: 120px; /* Set a fixed width for the image */
+        height: 200px; /* Set a fixed height for the image */
+        object-fit: cover; /* Ensure the image covers the area without distortion */
+        margin: 10px; /* Add margin around the image */
+    }
+
+    /* Card Body */
+    .card-body {
+        display: flex;
+        flex-direction: column; /* Stack text vertically */
+        justify-content: space-between; /* Space out text and button */
+        padding: 10px; /* Adjust padding for the card body */
+        flex-grow: 1; /* Allow the body to take up remaining space */
+    }
+
+    /* Title and Text */
+    .card-title {
+        margin: 0; /* Remove margin for title */
+        font-size: 1rem; /* Adjusted font size for the title */
+        overflow: hidden; /* Hide overflow */
+        text-overflow: ellipsis; /* Add ellipsis for overflow text */
+        white-space: normal; /* Allow text to wrap */
+        margin-bottom: 8px; /* Add space below the title */
+    }
+
+    .card-text {
+        margin: 0; /* Remove margin for text elements */
+        padding: 2px 0; /* Add a little padding for spacing */
+        font-size: 0.9rem; /* Adjusted font size for text */
+        overflow: hidden; /* Hide overflow */
+        text-overflow: ellipsis; /* Add ellipsis for overflow text */
+        white-space: normal; /* Allow text to wrap */
+        margin-bottom: 5px; /* Add space below each text element */
+    }
+
+    /* Button */
+    .btn-view-details {
+        align-self: flex-start; /* Align button to the left */
+        padding: 5px 10px;
+        font-size: 0.85rem; /* Adjusted font size for buttons */
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: auto; /* Push button to bottom */
+    }
+
+    .btn-view-details:hover {
+        background-color: #0056b3;
+    }
+
+        .book-card .card-body {
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    justify-content: space-between; /* Distribute space evenly */
+    padding: 10px; /* Add padding inside the card body */
+    min-height: 150px; /* Set a minimum height for uniformity */
+}
+
+.book-card .card-title {
+    font-size: 1rem; /* Adjust the font size for the title */
+    margin-bottom: 0.5rem; /* Space below the title */
+}
+
+.book-card .card-text {
+    font-size: 0.85rem; /* Adjust the font size for the text */
+    margin-bottom: 0.25rem; /* Space below each text element */
+}
+
+.book-card .btn {
+    font-size: 0.85rem; /* Adjust the font size for buttons */
+    margin-top: auto; /* Push button to the bottom */
+}
+
+        .classification-card {
+    transition: background-color 0.3s ease; /* Smooth transition for background color */
+}
+
+.classification-card:hover {
+    background-color: #f0f0f0; /* Change to a light gray or any color you prefer */
+}
+
+        .main-content {
+    flex: 1;
+    background: #ecf0f1;
+    padding: 20px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Book details container - wider now */
+.book-details {
+    display: flex;
+    align-items: flex-start;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    max-width: 900px; /* Increased width */
+    width: 100%;
+}
+
+/* Book image - properly sized */
+.book-image {
+    width: 150px;  /* Adjusted size */
+    height: auto;
+    margin-right: 20px;
+    border-radius: 5px;
+}
+
+/* Book info takes the full width next to image */
+.book-info {
+    flex: 1;
+    width: 100%;
+}
+
+/* Borrowing history table styling */
+.borrow-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.borrow-history-table th, .borrow-history-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+.borrow-history-table th {
+    background: #2980b9;
+    color: white;
+}
+
+        /* Add these styles to your existing CSS */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border-top: 1px solid #dee2e6;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.075);
+}
+
+.alert {
+    position: relative;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.bg-success {
+    background-color: #28a745!important;
+}
+
+.bg-danger {
+    background-color: #dc3545!important;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+        /* Add to your CSS */
+.table th:nth-child(5) {
+    position: relative;
+}
+
+.table th:nth-child(5) i {
+    margin-left: 5px;
+    color: #fff;
+}
+
+.table td:nth-child(5) {
+    font-weight: bold;
+    color: #dc3545; /* Red color for emphasis */
+}
+
+        /* Add to your existing styles */
+.table-success {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.payment-status {
+    max-width: 120px;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.payment-date {
+    display: block;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
+}
+
+        /* Add to your existing CSS */
+.payment-alert {
+    animation: slideIn 0.5s ease-out;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-left: 5px solid #28a745;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+/* Add to your existing CSS */
+.notification-item.payment-notification {
+    border-left: 3px solid #28a745;
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.notification-item.payment-notification .notification-message {
+    font-weight: 500;
+    color: #28a745;
+}
+
+</style>
+
+</head>
+<body>
+
+   <!-- Sidebar with Features -->
+<div class="sidebar">
+    <h3>📚 Library Panel</h3>
+    <a href="#" id="addBookButton" class="btn btn-primary"><i class="fas fa-book"></i> Add a New Book</a>
+    <a href="#" id="userManagementButton" class="btn btn-info"><i class="fas fa-user"></i> User Management</a>
+    <a href="#" id="viewBooksButton" class="btn btn-success"><i class="fas fa-book-open"></i> View Books</a>
+    <a href="/track_borrowed_books" class="btn btn-warning" target="_blank"><i class="fas fa-search"></i> Track Borrowed Books</a>
+<a href="/borrowing_rules" class="btn btn-secondary"><i class="fas fa-book"></i> Library Borrowing Rules</a>
+    <a href="#" id="utangButton" class="btn btn-dark"><i class="fas fa-chart-bar"></i> Fines  & Penalties</a>
+    <a href="#" id="notificationsButton" class="btn btn-primary"><i class="fas fa-bullhorn"></i> Notifications</a>
+    <a href="/" class="btn logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</div>
+
+<!-- Main Content -->
+<div class="content">
+    <h2>Dashboard</h2>
+    <p>Welcome to the Library Admin Dashboard</p>
+    <p>Here you can manage users, books, and other library resources.</p>
+
+    <div id="contentArea" class="frame"></div> <!-- This is where dynamic content will be displayed -->
+</div>
+
+<script>
+    const contentArea = document.getElementById('contentArea');
+
+    document.getElementById('addBookButton').addEventListener('click', function() {
+        contentArea.innerHTML = `
+            <h3>Add a New Book</h3>
+            <form id="addBookForm">
+                <input type="text" class="form-control" id="title" placeholder="Title" required><br>
+                <input type="text" class="form-control" id="author" placeholder="Author" required><br>
+                <input type="text" class="form-control" id="isbn" placeholder="ISBN" required><br>
+                <input type="text" class="form-control" id="publisher" placeholder="Publisher"><br>
+                <label for="publication_date">Publication Year:</label>
+                <select class="form-control" id="publication_date" required>
+                    <option value="" disabled selected>Select Year</option>
+                    ${Array.from({length: 50}, (_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return `<option value="${year}">${year}</option>`;
+                    }).join('')}
+                </select><br>
+                <label for="edition">Edition:</label>
+                <input type="text" class="form-control" id="edition" placeholder="Edition"><br>
+                <label>LCC Classification:</label><br>
+                <div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="General Works" id="lccA">
+                        <label class="form-check-label" for="lccA">General Works (A)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Philosophy, Psychology, Religion" id="lccB">
+                        <label class="form-check-label" for="lccB">Philosophy, Psychology, Religion (B)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Auxiliary Sciences of History" id="lccC">
+                        <label class="form-check-label" for="lccC">Auxiliary Sciences of History (C)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="World History and History of Europe, Asia, Africa, Australia, New Zealand" id="lccD">
+                        <label class="form-check-label" for="lccD">World History and History of Europe, Asia, Africa, Australia, New Zealand (D)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="History of the Americas" id="lccE">
+                        <label class="form-check-label" for="lccE">History of the Americas (E)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Local History of the Americas" id="lccF">
+                        <label class="form-check-label" for="lccF">Local History of the Americas (F)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Geography, Anthropology, Recreation" id="lccG">
+                        <label class="form-check-label" for="lccG">Geography, Anthropology, Recreation (G)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Social Sciences" id="lccH">
+                        <label class="form-check-label" for="lccH">Social Sciences (H)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Political Science" id="lccJ">
+                        <label class="form-check-label" for="lccJ">Political Science (J)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Law" id="lccK">
+                        <label class="form-check-label" for="lccK">Law (K)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Education" id="lccL">
+                        <label class="form-check-label" for="lccL">Education (L)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Music and Books on Music" id="lccM">
+                        <label class="form-check-label" for="lccM">Music and Books on Music (M)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Fine Arts" id="lccN">
+                        <label class="form-check-label" for="lccN">Fine Arts (N)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Language and Literature" id="lccP">
+                        <label class="form-check-label" for="lccP">Language and Literature (P)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Science" id="lccQ">
+                        <label class="form-check-label" for="lccQ">Science (Q)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Medicine" id="lccR">
+                        <label class="form-check-label" for="lccR">Medicine (R)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Agriculture" id="lccS">
+                        <label class="form-check-label" for="lccS">Agriculture (S)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Technology" id="lccT">
+                        <label class="form-check-label" for="lccT">Technology (T)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Military Science" id="lccU">
+                        <label class="form-check-label" for="lccU">Military Science (U)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Naval Science" id="lccV">
+                        <label class="form-check-label" for="lccV">Naval Science (V)</label>
+                     </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Sociology" id="lccHM">
+                        <label class="form-check-label" for="lccHM">Sociology (HM)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Public Administration" id="lccJF">
+                        <label class="form-check-label" for="lccJF">Public Administration (JF)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Public Health" id="lccRA">
+                        <label class="form-check-label" for="lccRA">Public Health (RA)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Statistics" id="lccHA">
+                        <label class="form-check-label" for="lccHA">Statistics (HA)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Bibliography, Library Science, Information Resources" id="lccZ">
+                        <label class="form-check-label" for="lccZ">Bibliography, Library Science, Information Resources (Z)</label>
+                    </div>
+                </div><br>
+                <input type="text" class="form-control" id="barcode" placeholder="Barcode" required><br>
+                <input type="file" class="form-control" id="image" accept="image/*" required><br>
+                <button type="submit" class="btn btn-success">Add Book</button>
+            </form>
+        `;
+    });
+
+    document.getElementById('userManagementButton').addEventListener('click', function() {
+        contentArea.innerHTML = `
+            <h3>User Management</h3>
+            <p>Select a user type to manage:</p>
+            <button id="manageTeachers" class="btn btn-primary">Manage Teachers</button>
+            <button id="manageStudents" class="btn btn-info">Manage Students</button>
+            <button id="manageUnassigned" class="btn btn-warning">Manage Unassigned Users</button>
+            <div id="userContentArea"></div>
+        `;
+
+        document.getElementById('manageTeachers').addEventListener('click', function() {
+            loadUsers('teacher');
+        });
+
+        document.getElementById('manageStudents').addEventListener('click', function() {
+            loadUsers('student');
+        });
+
+        document.getElementById('manageUnassigned').addEventListener('click', function() {
+            loadUnassignedUsers();
+        });
+    });
+
+  document.getElementById('viewBooksButton').addEventListener('click', async function() {
+    const contentArea = document.getElementById('contentArea');
+    contentArea.innerHTML = `
+        <h3 style="text-align: center; width: 100%;">Books Classifications</h3>
+        <div id="classificationList" class="row"></div>
+        <style>
+            .card {
+                max-width: 300px;
+                height: auto;
+                padding: 10px;
+                margin: auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background-color 0.3s ease, transform 0.2s ease;
+            }
+            .card:hover {
+                background-color: #007bff; /* Change to your desired hover color */
+                color: white; /* Change text color for better contrast */
+                transform: scale(1.05); /* Slightly increase size on hover */
+                cursor: pointer;
+            }
+        </style>
+    `;
+
+    // Load classifications
+    const classifications = [
+        "General Works (A)", "Philosophy, Psychology, Religion (B)",
+        "Auxiliary Sciences of History (C)", "World History and History of Europe, Asia, Africa, Australia, New Zealand (D)",
+        "History of the Americas (E)", "Local History of the Americas (F)",
+        "Geography, Anthropology, Recreation (G)", "Social Sciences (H)",
+        "Political Science (J)", "Law (K)", "Education (L)", "Music and Books on Music (M)",
+        "Fine Arts (N)", "Language and Literature (P)", "Science (Q)", "Medicine (R)",
+        "Agriculture (S)", "Technology (T)", "Military Science (U)", "Naval Science (V)",
+        "Sociology (HM)", "Public Administration (JF)", "Public Health (RA)",
+        "Statistics (HA)", "Bibliography, Library Science, Information Resources (Z)"
+    ];
+
+    const classificationList = classifications.map(classification => `
+        <div class="col-md-4 mb-3">
+            <div class="card text-center">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                    <h5 class="card-title" style="cursor: pointer; font-size: 14px;" onclick="loadBooksByClassification('${classification.split(' ')[0]}')">
+                        ${classification}
+                    </h5>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    document.getElementById('classificationList').innerHTML = classificationList;
+});
+
+async function loadBooksByClassification(classification) {
+    console.log(`Loading books for classification: ${classification}`);
+    const contentArea = document.getElementById('contentArea');
+
+    try {
+        let response = await fetch(`http://127.0.0.1:5000/books/${encodeURIComponent(classification)}`);
+        if (!response.ok) {
+            throw new Error("Error loading books by classification");
+        }
+        let books = await response.json();
+      let bookListHtml = books.map(book => `
+    <div class="col-md-4 mb-4">
+        <div class="card book-card"> <!-- Add the book-card class here -->
+            <img src="${book.image_url || 'static/default_image_url.jpg'}" class="card-img-top" alt="${book.title}">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">${book.title}</h5>
+                <p class="card-text"><strong>Author:</strong> ${book.author}</p>
+                <p class="card-text"><strong>ISBN:</strong> ${book.isbn}</p>
+                <p class="card-text"><strong>Barcode:</strong> ${book.barcode}</p>
+                <div class="mt-auto">
+                    <button class="btn btn-primary" onclick="viewBookDetails(${book.id})">View Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+`).join('');
+        contentArea.innerHTML = `
+            <h4>Books in ${classification}</h4>
+            <div class="row">${bookListHtml}</div>
+        `;
+    } catch (error) {
+        console.error("Error fetching books by classification:", error);
+        contentArea.innerHTML = `<p class='text-danger'>Error loading books: ${error.message}</p>`;
+    }
+}
+
+async function viewBookDetails(bookId) {
+    console.log(`Fetching book details for ID: ${bookId}`);
+
+    try {
+        let response = await fetch(`/book/${bookId}`, {
+            headers: { "X-Requested-With": "XMLHttpRequest" } // Tell the backend it's an AJAX request
+        });
+
+        if (!response.ok) {
+            throw new Error("Error loading book details");
+        }
+
+        let book = await response.json();
+        console.log("Book data:", book);
+
+        // Render the book details inside contentArea instead of redirecting
+        const contentArea = document.getElementById('contentArea');
+        contentArea.innerHTML = `
+            <h1>${book.title}</h1>
+            <img src="${book.image_url || 'static/default_image_url.jpg'}" alt="${book.title}" style="width: 150px; height: 200px; margin-bottom: 20px;">
+            <p><strong>Author:</strong> ${book.author}</p>
+            <p><strong>ISBN:</strong> ${book.isbn}</p>
+            <p><strong>Publisher:</strong> ${book.publisher}</p>
+            <p><strong>Publication Year:</strong> ${book.publication_date}</p>
+            <p><strong>Edition:</strong> ${book.edition}</p>
+            <p><strong>Barcode:</strong> ${book.barcode}</p>
+
+            <h2>Borrowing History</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Borrower Name</th>
+                        <th>School ID</th>
+                        <th>RFID Number</th>
+                        <th>Role</th>
+                        <th>Date Borrowed</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${book.borrow_history.map(record => `
+                        <tr>
+                            <td>${record.borrower_name}</td>
+                            <td>${record.school_id}</td>
+                            <td>${record.rfid_number}</td>
+                            <td>${record.role}</td>
+                            <td>${record.borrow_date}</td>
+                            <td>${record.status}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <button class="btn btn-primary" onclick="goBackToBooks()">Back to Books</button>
+        `;
+    } catch (error) {
+        console.error("Error fetching book details:", error);
+        document.getElementById('contentArea').innerHTML = `<p class='text-danger'>Error loading book details: ${error.message}</p>`;
+    }
+}
+
+function goBackToBooks() {
+    document.getElementById('viewBooksButton').click();
+}
+
+    async function loadUsers(userType) {
+        const userContentArea = document.getElementById('userContentArea');
+        userContentArea.innerHTML = `<h4>${userType.charAt(0).toUpperCase() + userType.slice(1)}s</h4>`;
+
+        // Fetch users from the server
+        let response = await fetch(`http://127.0.0.1:5000/get_users?type=${userType}`);
+        let users = await response.json();
+
+        if (users.length === 0) {
+            userContentArea.innerHTML += `<p>No ${userType}s found.</p>`;
+            return;
+        }
+
+        const userTable = `
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${users.map(user => `
+                        <tr>
+                            <td>${user.name}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="viewProfile('${user.id}')">View Profile</button>
+                                <button class="btn btn-danger" onclick="removeUser  ('${user.id}')">Remove</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        userContentArea.innerHTML += userTable;
+    }
+
+    function viewProfile(userId) {
+        // Redirect to the profile page
+        window.location.href = `http://127.0.0.1:5000/profile?id=${userId}`;
+    }
+
+    async function loadUnassignedUsers() {
+        const userContentArea = document.getElementById('userContentArea');
+        userContentArea.innerHTML = `<h4>Users Without Library Cards</h4>`;
+
+        // Fetch unassigned users from the server
+        let response = await fetch("http://127.0.0.1:5000/get_unassigned_users");
+        let users = await response.json();
+
+        if (users.length === 0) {
+            userContentArea.innerHTML += `<p>No users without library cards found.</p>`;
+            return;
+        }
+
+        const userTable = `
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${users.map(user => `
+                        <tr>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td>
+                                <button class="btn btn-success" onclick="assignLibraryCard('${user.id}')">Assign Library Card</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        userContentArea.innerHTML += userTable;
+    }
+
+    async function removeUser  (userId) {
+        // Send a request to remove the user
+        let response = await fetch("http://127.0.0.1:5000/remove_user", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id: userId })
+        });
+
+        if (response.ok) {
+            alert("User  removed successfully!");
+            loadUsers('teacher'); // Reload the user list
+        } else {
+            const data = await response.json();
+            alert(data.message || "An error occurred while removing the user.");
+        }
+    }
+
+    async function assignLibraryCard(userId) {
+        const cardNumber = prompt("Enter a unique library card number for the user:");
+        if (!cardNumber) return; // Exit if no card number is provided
+
+        // Logic to assign a library card
+        let response = await fetch("http://127.0.0.1:5000/assign_library_card", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id: userId, cardNumber })
+        });
+
+        if (response.ok) {
+            alert("Library card assigned successfully!");
+            loadUsers('student'); // Refresh the student list
+            loadUsers('teacher'); // Refresh the teacher list
+            loadUnassignedUsers(); // Refresh the unassigned users list
+        } else {
+            const data = await response.json();
+            alert(data.message || "An error occurred while assigning the library card.");
+        }
+    }
+
+    // Handle form submission for adding a book
+document.addEventListener('submit', async function(event) {
+    if (event.target.id === 'addBookForm') {
+        event.preventDefault();
+
+        const formData = new FormData();
+        formData.append('title', document.getElementById('title').value);
+        formData.append('author', document.getElementById('author').value);
+        formData.append('isbn', document.getElementById('isbn').value);
+        formData.append('publisher', document.getElementById('publisher').value);
+        formData.append('publication_date', document.getElementById('publication_date').value);
+        formData.append('edition', document.getElementById('edition').value);
+
+        // Collect selected LCC classifications
+        const lccCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        const selectedLccClassifications = Array.from(lccCheckboxes).map(checkbox => checkbox.value);
+        formData.append('lcc_classification', JSON.stringify(selectedLccClassifications)); // Send as JSON string
+
+        formData.append('barcode', document.getElementById('barcode').value);
+        formData.append('image', document.getElementById('image').files[0]); // Append the image file
+
+        // Send the data to the server to add the book
+        let response = await fetch("http://127.0.0.1:5000/add_book", {
+            method: "POST",
+            body: formData // Use FormData directly
+        });
+
+        if (response.ok) {
+            alert("Book added successfully!");
+            contentArea.innerHTML = `
+                <h3>Book Added</h3>
+                <p>The book "${document.getElementById('title').value}" has been successfully added to the library.</p>
+            `;
+        } else {
+            const data = await response.json();
+            alert(data.message || "An error occurred while adding the book.");
+        }
+    }
+});
+
+
+    // Handle Fines & Penalties button click
+document.getElementById('utangButton').addEventListener('click', async function() {
+    try {
+        const response = await fetch('/get_users_with_fines');
+        if (!response.ok) throw new Error('Failed to fetch users with fines');
+
+        const usersWithFines = await response.json();
+        console.log('Received data:', usersWithFines); // Debug log
+
+        if (usersWithFines.length === 0) {
+            contentArea.innerHTML = `
+                <h3>Fines & Penalties Management</h3>
+                <div class="alert alert-info">No users with outstanding fines found.</div>
+            `;
+            return;
+        }
+
+        const tableHtml = `
+            <h3>Fines & Penalties Management</h3>
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>RFID Number</th>
+                        <th>School ID</th>
+                        <th>Role</th>
+                        <th>Total Fines</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${usersWithFines.map(user => `
+                        <tr>
+                            <td>${user.name}</td>
+                            <td>${user.rfid_number}</td>
+                            <td>${user.school_id}</td>
+                            <td>${user.role}</td>
+                           <td>₱${(parseFloat(user.total_fines || 0)).toFixed(2)}</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="viewUserFines(${user.id})">
+                                    View Fines/Penalty
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        contentArea.innerHTML = tableHtml;
+    } catch (error) {
+        console.error('Error:', error);
+        contentArea.innerHTML = `
+            <div class="alert alert-danger">
+                Error loading fines data: ${error.message}
+            </div>
+        `;
+    }
+});
+
+// View detailed fines for a user
+async function viewUserFines(userId) {
+    try {
+        const response = await fetch(`/get_user_fines_details/${userId}`);
+        if (!response.ok) throw new Error('Failed to fetch fines details');
+
+        const finesData = await response.json();
+
+        // This is the fines table generation code you asked about
+     const finesTable = finesData.fines_details.map(fine => `
+    <tr data-book-id="${fine.book_id}"
+        data-user-id="${userId}"
+        data-borrow-id="${fine.borrow_id}"
+        class="${fine.payment_status === 'Paid' ? 'table-success' : 'table-warning'}">
+        <td>${fine.title}</td>
+        <td>${fine.author}</td>
+        <td>${fine.book_type}</td>
+        <td>${fine.borrow_date}</td>
+        <td>${fine.due_date}</td>
+        <td>${fine.return_date}</td>
+        <td>₱${parseFloat(fine.fine_amount || 0).toFixed(2)}</td>
+        <td>
+            <select class="form-control payment-status" onchange="updatePaymentStatus(this)">
+                <option value="Paid" ${fine.payment_status === 'Paid' ? 'selected' : ''}>Paid</option>
+                <option value="Unpaid" ${fine.payment_status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
+            </select>
+            ${fine.payment_status === 'Paid' && fine.payment_date ?
+              `<small class="text-muted payment-date">Paid on ${fine.payment_date}</small>` : ''}
+        </td>
+    </tr>
+`).join('');
+
+        contentArea.innerHTML = `
+            <div>
+                <button class="btn btn-secondary mb-3" onclick="document.getElementById('utangButton').click()">
+                    <i class="fas fa-arrow-left"></i> Back to Fines List
+                </button>
+
+                <h3>Fines Details for ${finesData.user_info.name}</h3>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">User Information</h5>
+                        <p><strong>RFID:</strong> ${finesData.user_info.rfid_number}</p>
+                        <p><strong>School ID:</strong> ${finesData.user_info.school_id}</p>
+                        <p><strong>Role:</strong> ${finesData.user_info.role}</p>
+                        <p><strong>Total Fines:</strong> ₱${parseFloat(finesData.total_fines || 0).toFixed(2)}</p>
+                    </div>
+                </div>
+
+                <h4>Fines Breakdown</h4>
+                <table class="table table-striped">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Book Title</th>
+                            <th>Author</th>
+                            <th>Type</th>
+                            <th>Borrowed</th>
+                            <th>Due Date</th>
+                            <th>Returned</th>
+                            <th>Fine Amount</th>
+                            <th>Payment Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${finesTable}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error:', error);
+        contentArea.innerHTML = `
+            <div class="alert alert-danger">
+                Error loading fines details: ${error.message}
+            </div>
+        `;
+    }
+}
+async function updatePaymentStatus(selectElement) {
+    const row = selectElement.closest('tr');
+    const bookId = row.dataset.bookId;
+    const userId = row.dataset.userId;
+    const borrowId = row.dataset.borrowId;
+    const status = selectElement.value;
+
+    // Show loading state
+    selectElement.disabled = true;
+    const originalHTML = selectElement.innerHTML;
+    selectElement.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Updating...`;
+
+    try {
+        const response = await fetch('/update_payment_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                book_id: bookId,
+                user_id: userId,
+                borrow_id: borrowId,
+                status: status
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Update failed');
+        }
+
+        // Update the UI
+        if (status === 'Paid') {
+            row.remove();
+
+            // Update the total fines display
+            const totalFinesElement = document.querySelector('.card-body p:last-child');
+            if (totalFinesElement) {
+                const currentTotal = parseFloat(totalFinesElement.textContent.replace('₱', ''));
+                const fineAmount = parseFloat(row.querySelector('td:nth-child(7)').textContent.replace('₱', ''));
+                const newTotal = Math.max(0, currentTotal - fineAmount);
+                totalFinesElement.textContent = `Total Fines: ₱${newTotal.toFixed(2)}`;
+            }
+
+            // Show success message
+            showAlert('success', 'Payment status updated and user notified', 3000);
+        } else {
+            row.className = status === 'Paid' ? 'table-success' : 'table-warning';
+        }
+
+    } catch (error) {
+        console.error("Update error:", error);
+        selectElement.value = selectElement.value === 'Paid' ? 'Unpaid' : 'Paid';
+        showAlert('danger', error.message, 5000);
+    } finally {
+        selectElement.disabled = false;
+        selectElement.innerHTML = originalHTML;
+    }
+}
+function showAlert(type, message, duration) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.style.position = 'fixed';
+    alert.style.bottom = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '1000';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+
+    document.body.appendChild(alert);
+
+    setTimeout(() => {
+        alert.remove();
+    }, duration);
+}
+
+// Mark fines as paid
+async function markFinesPaid(userId) {
+    if (!confirm('Are you sure you want to mark all fines as paid for this user?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/mark_fine_paid/${userId}`, {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to mark fines as paid');
+        }
+
+        alert('Fines successfully marked as paid!');
+        viewUserFines(userId); // Refresh the view
+    } catch (error) {
+        console.error('Error:', error);
+        alert(`Error: ${error.message}`);
+    }
+}
+
+
+// Add this to your user dashboard JavaScript
+async function checkPaymentNotifications() {
+    try {
+        const schoolId = sessionStorage.getItem('schoolId');
+        if (!schoolId) return;
+
+        // Fetch unread payment notifications
+        const response = await fetch(`/api/notifications?school_id=${schoolId}&type=payment`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const paymentNotifications = data.notifications.filter(n =>
+            n.message.includes("payment") || n.message.includes("Thank you for settling")
+        );
+
+        if (paymentNotifications.length > 0) {
+            // Show a special alert for payment notifications
+            paymentNotifications.forEach(notification => {
+                if (!notification.is_read) {
+                    showPaymentAlert(notification.message);
+                    // Mark as read
+                    fetch(`/api/notifications/${notification.id}/read?school_id=${schoolId}`, {
+                        method: 'PUT'
+                    });
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Error checking payment notifications:", error);
+    }
+}
+
+function showPaymentAlert(message) {
+    // Create a more prominent alert for payments
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success payment-alert';
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.bottom = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '2000';
+    alertDiv.style.maxWidth = '300px';
+    alertDiv.innerHTML = `
+        <h5><i class="fas fa-check-circle me-2"></i>Payment Confirmed</h5>
+        <p>${message}</p>
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // Auto-close after 10 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 10000);
+}
+
+// Add this to your existing notification polling
+setInterval(() => {
+    fetchUnreadCount();
+    checkPaymentNotifications(); // Add this line
+}, 30000); // Check every 30 seconds
+
+    async function loadFinesData() {
+    try {
+        const response = await fetch('/get_users_with_fines');
+        if (!response.ok) throw new Error('Failed to fetch users with fines');
+
+        const usersWithFines = await response.json();
+
+        if (usersWithFines.length === 0) {
+            contentArea.innerHTML = `
+                <h3>Fines & Penalties Management</h3>
+                <div class="alert alert-info">No users with outstanding fines found.</div>
+            `;
+            return;
+        }
+
+        const tableHtml = `
+            <h3>Fines & Penalties Management</h3>
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>RFID Number</th>
+                        <th>School ID</th>
+                        <th>Role</th>
+                        <th>Total Fines</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${usersWithFines.map(user => `
+                        <tr>
+                            <td>${user.name}</td>
+                            <td>${user.rfid_number}</td>
+                            <td>${user.school_id}</td>
+                            <td>${user.role}</td>
+                            <td>₱${parseFloat(user.total_fines).toFixed(2)}</td> <!-- Ensure total_fines is a number -->
+                            <td>
+                                <button class="btn btn-primary" onclick="viewUser Fines(${user.id})">
+                                    View Fines/Penalty
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        contentArea.innerHTML = tableHtml;
+    } catch (error) {
+        console.error('Error:', error);
+        contentArea.innerHTML = `
+            <div class="alert alert-danger">
+                Error loading fines data: ${error.message}
+            </div>
+        `;
+    }
+}
+</script>
+
+</body>
+</html>

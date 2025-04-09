@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Kiosk Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        /* ===== GLOBAL STYLES ===== */
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 220px;
+            background: var(--dark-color);
+            color: white;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+        }
+
+        .sidebar h3 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            padding: 0 20px;
+        }
+
+        .sidebar a {
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            margin: 5px 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .sidebar a:hover {
+            background: #34495e;
+            transform: translateX(5px);
+        }
+
+        .sidebar a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .logout {
+            margin-top: auto;
+            background: var(--danger-color);
+        }
+
+        .logout:hover {
+            background: #c0392b;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            flex-grow: 1;
+             background: #ecf0f1;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        /* ===== SEARCH BAR ===== */
+/* Enhanced Search Container */
+/* ===== SEARCH BAR ===== */
+.search-container {
+    position: relative;
+    flex-grow: 1;
+    max-width: 1200px;
+    margin-right: 20px;
+}
+
+.search-bar {
+    background: white;
+    border-radius: 25px;
+    padding: 18px 170px 18px 30px; /* Left padding reduced, right padding kept large */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 2px solid #e2e8f0;
+    width: 100%;
+    font-size: 1.2rem;
+    height: 60px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    text-align: left; /* Force text alignment to left */
+}
+
+.search-bar::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+    text-align: left; /* Changed from center to left */
+    padding-left: 0; /* Remove any placeholder padding */
+}
+
+.search-bar:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 20px rgba(52, 152, 219, 0.3);
+    padding: 18px 170px 18px 30px; /* Maintain same padding */
+}
+
+.search-button {
+    position: absolute;
+    right: 20px;
+    top: 8px;
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 1.1rem;
+}
+
+.autocomplete-box {
+    position: absolute;
+    top: 100%;
+    left: 30px;
+    right: 0;
+    width: calc(100% - 100px);
+    background: white;
+    border-radius: 0 0 15px 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    z-index: 100;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    margin-top: -5px;
+    border: 2px solid #e2e8f0;
+    border-top: none;
+}
+
+
+
+/* Rest of your existing autocomplete and search results styles... */
+
+.autocomplete-box div {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.autocomplete-box div:hover {
+    background-color: #f8f9fa;
+}
+
+.autocomplete-box div img {
+    width: 40px;
+    height: 60px;
+    object-fit: cover;
+    margin-right: 15px;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.autocomplete-box div .book-info {
+    flex: 1;
+}
+
+.autocomplete-box div .book-title {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 3px;
+}
+
+.autocomplete-box div .book-author {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.autocomplete-box div .book-type {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: #eee;
+    color: #555;
+}
+
+/* Search results container */
+.search-results-container {
+    margin-top: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.search-results-header {
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-results-header h3 {
+    margin: 0;
+    color: var(--dark-color);
+}
+
+.search-results-count {
+    background: var(--primary-color);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+.search-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.no-results {
+    padding: 40px;
+    text-align: center;
+    color: #666;
+}
+
+.no-results i {
+    font-size: 3rem;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+/* Notification System Styling */
+
+.notification-icon {
+  position: relative;
+  cursor: pointer;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ff4d4d;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+.notification-modal {
+  display: none;
+  position: fixed; /* Changed from absolute to fixed */
+  top: 70px; /* Adjusted from 60px */
+  right: 20px;
+  width: 350px;
+  max-height: 500px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1050; /* Increased from 101 */
+  overflow: hidden;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040; /* Should be below modal but above everything else */
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  background-color: #f8f9fa;
+}
+
+.notification-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.notification-header button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.notification-header button:hover {
+  color: #000;
+}
+
+.notification-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+  background-color: #f5f5f5;
+}
+
+.notification-item.unread {
+  background-color: #e8f4fc;
+  border-left: 3px solid #0d6efd;
+}
+
+.notification-message {
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #777;
+}
+
+.no-notifications {
+  padding: 20px;
+  text-align: center;
+  color: #777;
+  font-style: italic;
+}
+
+/* Add to your existing CSS */
+.payment-alert {
+    animation: slideIn 0.5s ease-out;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-left: 5px solid #28a745;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+
+/* Add to your existing CSS */
+.notification-item.payment-notification {
+    border-left: 3px solid #28a745;
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.notification-item.payment-notification .notification-message {
+    font-weight: 500;
+    color: #28a745;
+}
+
+        /* ===== BOOK CARDS ===== */
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .book-card {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .book-image-container {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .book-cover {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .book-card:hover .book-cover {
+            transform: scale(1.03);
+        }
+
+        .book-type-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .regular-badge { background: var(--primary-color); }
+        .reserve-badge { background: var(--danger-color); }
+
+        .card-body {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .book-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            color: var(--dark-color);
+            min-height: 50px;
+        }
+
+        .book-meta {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .meta-item i {
+            width: 18px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+
+        .status-pill {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+        }
+
+        .available {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .checked-out {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+.history-status-returned {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+}
+
+.history-status-borrowed {
+    background: #ffebee;
+    color: #c62828;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+}
+
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            background: var(--primary-color);
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        /* ===== DETAILS PAGE ===== */
+        .book-details-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .book-details-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+
+        .book-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .book-info-grid div {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        /* ===== TABLES ===== */
+        .data-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* ===== PROFILE PAGE ===== */
+      /* Enhanced Empty State Styles */
+.empty-state-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.empty-state-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 20px;
+}
+
+.empty-state-header h2 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.empty-state-header h2 i {
+    font-size: 1.5rem;
+}
+
+.empty-state-content {
+    padding: 40px;
+    text-align: center;
+}
+
+.empty-state-content i {
+    opacity: 0.6;
+}
+
+.empty-state-content h3 {
+    margin: 20px 0 10px;
+    color: var(--dark-color);
+}
+
+.empty-state-content p {
+    color: #64748b;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Enhanced Profile Styles */
+.profile-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 20px;
+}
+
+.profile-header h2 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-card {
+    padding: 30px;
+}
+
+.profile-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.profile-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.profile-section h3 {
+    color: var(--dark-color);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-detail {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.detail-label {
+    font-weight: 600;
+    width: 200px;
+    color: #555;
+}
+
+.detail-value {
+    flex: 1;
+    color: #334155;
+}
+
+        /* ===== NOTIFICATIONS ===== */
+        .notification-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            z-index: 1050;
+        }
+
+        .notification-list {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .notification-item.unread {
+            background: #f8f9fa;
+        }
+
+        .notification-content {
+            margin-bottom: 5px;
+        }
+
+        .notification-time {
+            font-size: 12px;
+            color: #777;
+        }
+
+        /* ===== MODAL OVERLAY ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+            display: none;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 220px;
+            }
+            .content {
+                margin-left: 220px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .content {
+                margin-left: 0;
+            }
+            .books-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .search-container {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .book-title {
+                font-size: 1rem;
+            }
+            .book-image-container {
+                height: 180px;
+            }
+            .card-body {
+                padding: 15px;
+            }
+            .card-footer {
+                padding: 12px 15px;
+            }
+        }
+
+        /* ===== ENHANCED BORROWING HISTORY STYLES ===== */
+.history-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.history-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-header h2 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.history-header h2 i {
+    font-size: 1.5rem;
+}
+
+.history-summary {
+    display: flex;
+    gap: 20px;
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.summary-card {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.summary-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.summary-icon.books {
+    background: var(--primary-color);
+}
+
+.summary-icon.penalties {
+    background: var(--danger-color);
+}
+
+.summary-icon.returns {
+    background: var(--success-color);
+}
+
+.summary-text h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #555;
+}
+
+.summary-text p {
+    margin: 5px 0 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.history-table-container {
+    padding: 20px;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.history-table thead th {
+    background: #f1f5f9;
+    color: #64748b;
+    font-weight: 600;
+    padding: 15px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.history-table tbody tr {
+    transition: all 0.2s;
+}
+
+.history-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.history-table td {
+    padding: 15px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+.history-table tr:last-child td {
+    border-bottom: none;
+}
+
+.book-info-cell {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.book-cover-small {
+    width: 50px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.book-title-cell {
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.book-author-cell {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-top: 3px;
+}
+
+.date-cell {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #334155;
+}
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar d-flex flex-column">
+        <h3>📚 Kiosk Library Portal</h3>
+        <a href="#" id="viewProfileButton"><i class="fas fa-user"></i> View Profile</a>
+        <a href="#" id="libraryBooksButton"><i class="fas fa-book"></i> Library Books</a>
+        <a href="#" id="borrowedBooksButton"><i class="fas fa-book-open"></i> Borrowed Books</a>
+        <a href="#" id="borrowingHistoryButton"><i class="fas fa-history"></i> Borrowing History</a>
+        <a href="#" id="penaltiesButton"><i class="fas fa-money-bill-wave"></i> Penalties</a>
+        <a href="#" id="reservedBookButton"><i class="fas fa-search"></i> Reserved Books</a>
+        <a href="/" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content">
+        <!-- Top Navigation Bar -->
+        <div class="page-header">
+            <h2 id="pageTitle">Library Books</h2>
+            <div class="d-flex align-items-center">
+                <!-- Update the search container in your HTML -->
+<div class="search-container me-3">
+    <input type="text" class="form-control search-bar" id="searchInput" placeholder="Search books by title, author, or ISBN...">
+    <button class="btn search-button" id="searchBooksButton"><i class="fas fa-search"></i></button>
+    <div class="autocomplete-box" id="autocompleteBox"></div>
+</div>
+                <div class="notification-icon" id="notificationIcon">
+                 <i class="fas fa-bell"></i>
+                 <span class="notification-badge" id="notificationCount">0</span>
+                  </div>
+                </div>
+</div>
+
+<!-- Modal overlay for notifications -->
+<div class="modal-overlay" id="modalOverlay"></div>
+
+        <!-- Dynamic Content Container -->
+        <div id="contentArea">
+            <!-- Content loads here dynamically -->
+        </div>
+    </div>
+
+    <!-- All JavaScript -->
+    <script>
+        // ====== CORE FUNCTIONS ======
+
+        // Load library books
+       async function loadLibraryBooks() {
+    try {
+        document.getElementById("pageTitle").textContent = "Library Books";
+        document.getElementById("contentArea").innerHTML = `
+            <div class="d-flex justify-content-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+
+        const response = await fetch(`http://127.0.0.1:5000/get_available_books`);
+        if (!response.ok) throw new Error("Error loading books");
+        const books = await response.json();
+
+        const bookListHtml = books.map(book => `
+            <div class="book-card">
+                <div class="book-image-container" style="display: flex; justify-content: center; align-items: center; background: #f5f5f5;">
+                    <img src="${book.image_url || 'static/default_book_cover.png'}"
+                         style="max-width: 100%; max-height: 100%; object-fit: contain;"
+                         class="book-cover"
+                         alt="${book.title}"
+                         onerror="this.src='static/default_book_cover.png'">
+                    <div class="book-type-badge ${book.book_type === 'Reserve' ? 'reserve-badge' : 'regular-badge'}">
+                        ${book.book_type}
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <h5 class="book-title">${book.title}</h5>
+
+                    <div class="book-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-user-pen"></i>
+                            <span>${book.author}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-hashtag"></i>
+                            <span>${book.isbn}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-tag"></i>
+                            <span>${book.lcc_classification || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="status-pill ${book.status === 'Available' ? 'available' : 'checked-out'}">
+                        <i class="fas ${book.status === 'Available' ? 'fa-check-circle' : 'fa-clock'}"></i>
+                        ${book.status}
+                    </div>
+
+                    <button class="action-btn" onclick="viewBookDetails(${book.id})">
+                        <i class="fas fa-eye"></i> Details
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        document.getElementById("contentArea").innerHTML = `
+            <div class="books-grid">${bookListHtml}</div>
+        `;
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("contentArea").innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error loading books: ${error.message}
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadLibraryBooks()">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+        // View book details
+        async function viewBookDetails(bookId) {
+    try {
+        document.getElementById("contentArea").innerHTML = `
+            <div class="d-flex justify-content-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+
+        const response = await fetch(`http://127.0.0.1:5000/user/book/${bookId}`);
+        if (!response.ok) throw new Error("Error loading book details");
+        const book = await response.json();
+
+
+        // Sort borrow history by date (newest first)
+        book.borrow_history.sort((a, b) => {
+            return new Date(b.borrow_date) - new Date(a.borrow_date);
+        });
+
+
+        document.getElementById("contentArea").innerHTML = `
+            <div class="book-details-container">
+                <button class="btn btn-secondary mb-3" onclick="loadLibraryBooks()">
+                    <i class="fas fa-arrow-left"></i> Back to Books
+                </button>
+
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <img src="${book.image_url || 'static/default_book_cover.png'}"
+                             class="book-details-image"
+                             alt="${book.title}"
+                             onerror="this.src='static/default_book_cover.png'">
+                    </div>
+                    <div class="col-md-8">
+                        <h2>${book.title}</h2>
+                        <p class="text-muted">by ${book.author}</p>
+
+                        <div class="book-info-grid">
+                            <div><strong>LCC Classification:</strong> ${book.lcc_classification || 'N/A'}</div>
+                            <div><strong>Book Type:</strong> ${book.book_type}</div>
+                            <div><strong>ISBN:</strong> ${book.isbn}</div>
+                            <div><strong>Barcode:</strong> ${book.barcode}</div>
+                            <div><strong>Publisher:</strong> ${book.publisher || 'N/A'}</div>
+                            <div><strong>Edition:</strong> ${book.edition || 'N/A'}</div>
+                            <div><strong>Publication Year:</strong> ${book.publication_date || 'N/A'}</div>
+                            <div><strong>Status:</strong>
+                                <span class="status-pill ${book.status === 'Available' ? 'available' : 'checked-out'}">
+                                    ${book.status}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button class="btn btn-success" onclick="reserveBook(${book.id})">
+                                <i class="fas fa-bookmark"></i> Reserve Book
+                            </button>
+                            ${book.status === 'Available' ? `
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <h4><i class="fas fa-history"></i> Borrowing History</h4>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Borrower</th>
+                                    <th>School ID</th>
+                                    <th>RFID Number</th>
+                                    <th>Role</th>
+                                    <th>Borrow Date</th>
+                                    <th>Return Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${book.borrow_history.map(record => {
+                                    const borrowDate = new Date(record.borrow_date);
+                                    const returnDate = record.return_date ? new Date(record.return_date) : null;
+
+                                    return `
+                                        <tr>
+                                            <td>${record.borrower_name}</td>
+                                            <td>${record.school_id}</td>
+                                            <td>${record.rfid_number}</td>
+                                            <td>${record.role}</td>
+                                            <td>${formatDateTime(borrowDate)}</td>
+                                            <td>${returnDate ? formatDateTime(returnDate) : '-'}</td>
+                                            <td>
+                                                ${(() => {
+                                                    const isReturned = record.status === 'RETURNED' || record.return_date;
+                                                    return `<span class="${isReturned ? 'history-status-returned' : 'history-status-borrowed'}">
+                                                        ${isReturned ? 'Returned' : 'Borrowed'}
+                                                    </span>`;
+                                                })()}
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("contentArea").innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error loading book details: ${error.message}
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="viewBookDetails(${bookId})">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+        // Load user profile
+    async function loadUserProfile() {
+    console.log("Loading user profile...");
+    let schoolId = sessionStorage.getItem('schoolId');
+    if (!schoolId) {
+        document.getElementById("contentArea").innerHTML = `<p class='text-danger'>School ID is missing.</p>`;
+        return;
+    }
+    try {
+        let response = await fetch(`http://127.0.0.1:5000/get_users_user_profile?school_id=${schoolId}`);
+        if (!response.ok) {
+            throw new Error("Error loading profile");
+        }
+        let userProfile = await response.json();
+
+        document.getElementById("contentArea").innerHTML = `
+            <div class="profile-container">
+                <div class="profile-header">
+                    <h2><i class="fas fa-user-circle"></i> User Profile</h2>
+                </div>
+
+                <div class="profile-card">
+                    <div class="profile-section">
+                        <h3><i class="fas fa-id-card"></i> Basic Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Name:</span>
+                            <span class="detail-value">${userProfile.name || 'Not provided'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Role:</span>
+                            <span class="detail-value">${userProfile.role || 'Not specified'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">School ID:</span>
+                            <span class="detail-value">${userProfile.school_id || 'Not provided'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Gender:</span>
+                            <span class="detail-value">${userProfile.gender || 'Not specified'}</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <h3><i class="fas fa-address-card"></i> Contact Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Email:</span>
+                            <span class="detail-value">${userProfile.email || 'Not provided'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Contact Number:</span>
+                            <span class="detail-value">${userProfile.contact_number || 'Not provided'}</span>
+                        </div>
+                    </div>
+
+                    ${userProfile.role === 'Student' ? `
+                    <div class="profile-section">
+                        <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Course:</span>
+                            <span class="detail-value">${userProfile.course || 'Not specified'}</span>
+                        </div>
+                        <div class="profile-detail">
+                            <span class="detail-label">Year Level:</span>
+                            <span class="detail-value">${userProfile.year_level || 'Not specified'}</span>
+                        </div>
+                    </div>` : `
+                    <div class="profile-section">
+                        <h3><i class="fas fa-briefcase"></i> Professional Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Department:</span>
+                            <span class="detail-value">${userProfile.department || 'Not specified'}</span>
+                        </div>
+                    </div>`}
+
+                    <div class="profile-section">
+                        <h3><i class="fas fa-book-reader"></i> Library Information</h3>
+                        <div class="profile-detail">
+                            <span class="detail-label">Library Card Number:</span>
+                            <span class="detail-value">${userProfile.rfid_number || 'Not assigned'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Error fetching profile:", error);
+        document.getElementById("contentArea").innerHTML = `<p class='text-danger'>Error loading profile: ${error.message}</p>`;
+    }
+}
+
+
+
+        // Load borrowed books
+   async function loadBorrowedBooks() {
+    console.log("Loading borrowed books...");
+    let schoolId = sessionStorage.getItem('schoolId');
+    if (!schoolId) {
+        document.getElementById("contentArea").innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                School ID is missing. Please try again or contact support.
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        // Show loading state
+        document.getElementById("contentArea").innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h4 class="mt-3">Loading Your Borrowed Books</h4>
+            </div>
+        `;
+
+        let response = await fetch(`http://127.0.0.1:5000/get_borrowed_books?school_id=${schoolId}`);
+        if (!response.ok) {
+            throw new Error("Failed to load borrowed books");
+        }
+        let borrowedBooks = await response.json();
+
+        if (borrowedBooks.length === 0) {
+            document.getElementById("contentArea").innerHTML = `
+                <div class="empty-state-container">
+                    <div class="empty-state-header bg-primary text-white">
+                        <h2><i class="fas fa-book-open me-2"></i> Borrowed Books</h2>
+                    </div>
+                    <div class="empty-state-content text-center py-5">
+                        <i class="fas fa-book fa-4x text-muted mb-4"></i>
+                        <h3 class="text-dark">No Books Currently Borrowed</h3>
+                        <p class="text-muted mb-4">You don't have any books checked out at the moment</p>
+                        <button class="btn btn-primary px-4" onclick="loadLibraryBooks()">
+                            <i class="fas fa-book me-2"></i> Browse Available Books
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Format dates with time
+        let borrowedBooksHtml = borrowedBooks.map(book => {
+            const borrowDate = new Date(book.borrow_date);
+            const dueDate = new Date(book.due_date);
+            const returnDate = book.return_date ? new Date(book.return_date) : null;
+
+            return `
+                <tr class="align-middle">
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <div class="fw-bold">${book.title}</div>
+                                <div class="text-muted small">${book.author}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-nowrap">${formatDateTime(borrowDate)}</td>
+                    <td class="text-nowrap">${formatDateTime(dueDate)}</td>
+                    <td class="text-nowrap">${returnDate ? formatDateTime(returnDate) : "Not Returned"}</td>
+                    <td class="text-end fw-bold ${book.penalty > 0 ? 'text-danger' : 'text-success'}">
+                        ₱${book.penalty ? book.penalty.toFixed(2) : '0.00'}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        document.getElementById("contentArea").innerHTML = `
+            <div class="borrowed-books-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="mb-0">
+                        <i class="fas fa-book-open text-primary me-2"></i>
+                        Borrowed Books
+                    </h2>
+                    <span class="badge bg-primary rounded-pill">
+                        ${borrowedBooks.length} ${borrowedBooks.length === 1 ? 'Book' : 'Books'}
+                    </span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Book</th>
+                                <th>Borrow Date</th>
+                                <th>Due Date</th>
+                                <th>Return Date</th>
+                                <th class="text-end">Penalty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${borrowedBooksHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info mt-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Remember to return your books on time to avoid penalties.
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Error fetching borrowed books:", error);
+        document.getElementById("contentArea").innerHTML = `
+            <div class="alert alert-danger">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                    <div>
+                        <h4 class="alert-heading">Error Loading Borrowed Books</h4>
+                        <p>${error.message || 'An unexpected error occurred'}</p>
+                        <button class="btn btn-sm btn-outline-danger mt-2" onclick="loadBorrowedBooks()">
+                            <i class="fas fa-sync-alt me-1"></i> Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+
+       // Function to load borrowing history
+ async function loadBorrowingHistory() {
+    const container = document.getElementById("contentArea");
+
+    // Show loading state with spinner
+    container.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4 class="mt-3">Loading your borrowing history...</h4>
+            <p class="text-muted">Please wait while we fetch your records</p>
+        </div>
+    `;
+
+    try {
+        let schoolId = sessionStorage.getItem('schoolId');
+        if (!schoolId) {
+            const profileRes = await fetch("/get_users_user_profile");
+            if (!profileRes.ok) throw new Error("Failed to load profile (Status: " + profileRes.status);
+            const profile = await profileRes.json();
+            schoolId = profile.school_id;
+            sessionStorage.setItem('schoolId', schoolId);
+        }
+
+        const response = await fetch(`/get_borrowing_history?school_id=${schoolId}`);
+        if (!response.ok) {
+            throw new Error("Failed to load history data. Server error.");
+        }
+        const history = await response.json();
+
+        if (!history || history.length === 0) {
+            container.innerHTML = `
+                <div class="history-container">
+                    <div class="history-header">
+                        <h2><i class="fas fa-history"></i> Your Borrowing History</h2>
+                    </div>
+                    <div class="text-center py-5">
+                        <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                        <h4>No borrowing history found</h4>
+                        <p class="text-muted">You haven't borrowed any books yet</p>
+                        <button class="btn btn-primary mt-3" onclick="loadLibraryBooks()">
+                            <i class="fas fa-book me-2"></i>Browse Library
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Calculate summary statistics
+        const totalBooks = history.length;
+        const totalPenalties = history.reduce((sum, item) => sum + (item.late_fees || 0), 0);
+        const returnedBooks = history.filter(item => item.return_date).length;
+
+        // Format data with date and time
+        const formattedHistory = history.map(item => {
+            const borrowDate = new Date(item.borrow_date);
+            const dueDate = new Date(item.due_date);
+            const returnDate = item.return_date ? new Date(item.return_date) : null;
+
+            return {
+                ...item,
+                borrow_date: formatDateTime(borrowDate),
+                due_date: formatDateTime(dueDate),
+                return_date: returnDate ? formatDateTime(returnDate) : "Not Returned",
+                late_fees: item.late_fees ? `₱${item.late_fees.toFixed(2)}` : "₱0.00",
+                status_class: item.return_date ? 'available' : 'checked-out',
+                status_text: item.return_date ? 'Returned' : 'Borrowed'
+            };
+        });
+
+        // Render the enhanced history view
+        container.innerHTML = `
+            <div class="history-container">
+                <div class="history-header">
+                    <h2><i class="fas fa-history"></i> Your Borrowing History</h2>
+                    <button class="btn btn-sm btn-outline-light" onclick="loadLibraryBooks()">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Library
+                    </button>
+                </div>
+
+                <div class="history-summary">
+                    <div class="summary-card">
+                        <div class="summary-icon books">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="summary-text">
+                            <h3>Total Books</h3>
+                            <p>${totalBooks}</p>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div class="summary-icon returns">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="summary-text">
+                            <h3>Books Returned</h3>
+                            <p>${returnedBooks}</p>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <div class="summary-icon penalties">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="summary-text">
+                            <h3>Total Penalties</h3>
+                            <p>₱${totalPenalties.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="history-table-container">
+                    <div class="table-responsive">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>Book</th>
+                                    <th>Borrowed Date</th>
+                                    <th>Due Date</th>
+                                    <th>Returned Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Fees</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${formattedHistory.map(item => `
+                                    <tr>
+                                        <td>
+                                            <div class="book-info-cell">
+                                                <div>
+                                                    <div class="book-title-cell">${item.title}</div>
+                                                    <div class="book-author-cell">${item.author}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="date-cell">${item.borrow_date}</td>
+                                        <td class="date-cell">${item.due_date}</td>
+                                        <td class="date-cell">${item.return_date}</td>
+                                        <td>
+                                            <span class="status-pill ${item.status_class}">
+                                                <i class="fas ${item.return_date ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                                ${item.status_text}
+                                            </span>
+                                        </td>
+                                        <td class="text-end ${item.late_fees !== '₱0.00' ? 'fw-bold text-danger' : ''}">
+                                            ${item.late_fees}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error("History load error:", error);
+        container.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show">
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Error Loading History</h4>
+                <p>${error.message || 'An unexpected error occurred'}</p>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-sm btn-outline-danger" onclick="loadBorrowingHistory()">
+                        <i class="fas fa-sync-alt me-1"></i>Try Again
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="loadLibraryBooks()">
+                        <i class="fas fa-book me-1"></i>Go to Library
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Debug: Check if schoolId exists
+    const schoolId = sessionStorage.getItem('schoolId');
+    console.log("Current schoolId in sessionStorage:", schoolId);
+
+    // Rest of your initialization code
+});
+
+        // Load penalties
+   // Load penalties
+async function loadPenalties() {
+    try {
+        const schoolId = sessionStorage.getItem('schoolId');
+        if (!schoolId) {
+            throw new Error("User  not logged in");
+        }
+
+        // Show loading spinner
+        document.getElementById("contentArea").innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary"></div>
+                <p>Loading penalties...</p>
+            </div>
+        `;
+
+        const response = await fetch(`/get_penalties_details?school_id=${schoolId}`);
+        const data = await response.json();
+
+        console.log("Penalties data:", data); // Debug log
+
+        if (!data.penalties || data.penalties.length === 0) {
+            // Handle no penalties case
+            contentArea.innerHTML = `
+                <div class="empty-state-container">
+                    <div class="empty-state-header bg-success text-white">
+                        <h2><i class="fas fa-check-circle"></i> No Outstanding Penalties</h2>
+                    </div>
+                    <div class="empty-state-content text-center py-5">
+                        <i class="fas fa-smile fa-4x text-success mb-4"></i>
+                        <h3 class="text-dark">Good News!</h3>
+                        <p class="text-muted">You don't have any fines or overdue books at this time.</p>
+                        <div class="alert alert-success mt-4">
+                            <i class="fas fa-thumbs-up me-2"></i> Your account is in good standing!
+                        </div>
+                        <button class="btn btn-primary mt-3" onclick="loadLibraryBooks()">
+                            <i class="fas fa-book me-2"></i> Browse Available Books
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Build penalties table
+        let html = `
+            <h3>Your Penalties</h3>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Book</th>
+                        <th>Days Late</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        data.penalties.forEach(penalty => {
+            const rowClass = penalty.status === 'Pending' ? 'table-warning' :
+                             penalty.status === 'Unpaid' ? 'table-danger' : '';
+
+            html += `
+                <tr class="${rowClass}">
+                    <td>${penalty.title || 'Unknown Book'}</td>
+                    <td>${penalty.days_late || 'N/A'}</td>
+                    <td>₱${parseFloat(penalty.penalty_amount || 0).toFixed(2)}</td>
+                    <td>
+                        ${penalty.status === 'Pending' ?
+                          'Estimated (not yet returned)' :
+                          penalty.status}
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+                </tbody>
+            </table>
+            <div class="alert alert-secondary">
+                Total Unpaid: ₱${parseFloat(data.unpaid_penalties || 0).toFixed(2)}
+            </div>
+        `;
+
+        document.getElementById("contentArea").innerHTML = html;
+
+    } catch (error) {
+        console.error("Error loading penalties:", error);
+        document.getElementById("contentArea").innerHTML = `
+            <div class="alert alert-danger">
+                Error loading penalties: ${error.message}
+                <button onclick="loadPenalties()" class="btn btn-sm btn-primary mt-2">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+
+        // Load reserved books
+        async function loadReservedBooks() {
+            try {
+                document.getElementById("pageTitle").textContent = "Reserved Books";
+                document.getElementById("contentArea").innerHTML = `
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                `;
+
+                const response = await fetch('/get_reserved_books');
+                if (!response.ok) throw new Error("Failed to load reserved books");
+                const books = await response.json();
+
+                let html = `<h3><i class="fas fa-bookmark me-2"></i>Your Reserved Books</h3>`;
+
+                if (books.length === 0) {
+                    html += `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No books currently reserved
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="books-grid">
+                            ${books.map(book => `
+                                <div class="book-card">
+                                    <div class="book-image-container">
+                                        <img src="${book.image_url || 'static/default_book_cover.png'}"
+                                             class="book-cover"
+                                             alt="${book.title}"
+                                             onerror="this.src='static/default_book_cover.png'">
+                                        <div class="book-type-badge reserve-badge">
+                                            Reserved
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="book-title">${book.title}</h5>
+                                        <div class="book-meta">
+                                            <div class="meta-item">
+                                                <i class="fas fa-user-pen"></i>
+                                                <span>${book.author}</span>
+                                            </div>
+                                            <div class="meta-item">
+                                                <i class="fas fa-calendar-day"></i>
+                                                <span>Reserved until: ${formatDate(book.reserve_expiry)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <button class="action-btn btn-danger" onclick="cancelReservation(${book.id})">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                document.getElementById("contentArea").innerHTML = html;
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById("contentArea").innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error loading reserved books: ${error.message}
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadReservedBooks()">
+                            <i class="fas fa-sync-alt"></i> Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // ====== ACTION FUNCTIONS ======
+
+        // Reserve a book
+        async function reserveBook(bookId) {
+            try {
+                const response = await fetch('/reserve_book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ book_id: bookId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    loadLibraryBooks(); // Refresh the list
+                } else {
+                    alert(result.message || "Failed to reserve book");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred while reserving the book");
+            }
+        }
+
+        // Cancel a reservation
+        async function cancelReservation(bookId) {
+            if (!confirm("Are you sure you want to cancel this reservation?")) return;
+
+            try {
+                const response = await fetch('/cancel_reservation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ book_id: bookId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    loadReservedBooks(); // Refresh the list
+                } else {
+                    alert(result.message || "Failed to cancel reservation");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred while canceling the reservation");
+            }
+        }
+
+        // Borrow a book
+        async function borrowBook(bookId) {
+            try {
+                const response = await fetch('/borrow_book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ book_id: bookId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    loadLibraryBooks(); // Refresh the list
+                } else {
+                    alert(result.message || "Failed to borrow book");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred while borrowing the book");
+            }
+        }
+
+        // Pay penalties
+        async function payPenalties() {
+            try {
+                const response = await fetch('/pay_penalties', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    loadPenalties(); // Refresh the list
+                } else {
+                    alert(result.message || "Failed to process payment");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred while processing payment");
+            }
+        }
+
+        // Search books
+       async function showLibraryRules() {
+           console.log("Loading library rules...");
+           // Fetch and display library rules
+           document.getElementById("contentArea").innerHTML = `<h4>Library Rules</h4><p>Library rules functionality is not yet implemented.</p>`;
+       }
+
+        // Function to search books
+    // Update the searchBooks function
+async function searchBooks() {
+    console.log("Searching for books...");
+    let query = document.getElementById('searchInput').value.trim();
+    let autocompleteBox = document.getElementById("autocompleteBox");
+    let contentArea = document.getElementById("contentArea");
+
+    if (query === "") {
+        autocompleteBox.style.display = "none";
+        loadLibraryBooks(); // Return to default view if search is empty
+        return;
+    }
+
+    // Show loading state
+    contentArea.innerHTML = `
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+
+    try {
+        let response = await fetch(`/kiosk_search_books?query=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+            throw new Error("Error fetching search results");
+        }
+        let books = await response.json();
+
+        // Update page title
+        document.getElementById("pageTitle").textContent = "Search Results";
+
+        if (books.length === 0) {
+            contentArea.innerHTML = `
+                <div class="search-results-container">
+                    <div class="search-results-header">
+                        <h3>Search Results</h3>
+                        <span class="search-results-count">0 results</span>
+                    </div>
+                    <div class="no-results">
+                        <i class="fas fa-book-open"></i>
+                        <h4>No books found</h4>
+                        <p>We couldn't find any books matching "${query}"</p>
+                        <button class="btn btn-primary mt-3" onclick="loadLibraryBooks()">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Library
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+
+
+        // Generate HTML for search results
+        let resultsHtml = books.map(book => `
+            <div class="book-card">
+                <div class="book-image-container" style="display: flex; justify-content: center; align-items: center; background: #f5f5f5;">
+                    <img src="${book.image_url || 'static/default_book_cover.png'}"
+                         style="max-width: 100%; max-height: 100%; object-fit: contain;"
+                         class="book-cover"
+                         alt="${book.title}"
+                         onerror="this.src='static/default_book_cover.png'">
+                    <div class="book-type-badge ${book.book_type === 'Reserve' ? 'reserve-badge' : 'regular-badge'}">
+                        ${book.book_type}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5 class="book-title">${book.title}</h5>
+                    <div class="book-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-user-pen"></i>
+                            <span>${book.author}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-hashtag"></i>
+                            <span>${book.isbn}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="status-pill ${book.status === 'Available' ? 'available' : 'checked-out'}">
+                        <i class="fas ${book.status === 'Available' ? 'fa-check-circle' : 'fa-clock'}"></i>
+                        ${book.status}
+                    </div>
+                    <button class="action-btn" onclick="viewBookDetails(${book.id})">
+                        <i class="fas fa-eye"></i> Details
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        contentArea.innerHTML = `
+            <div class="search-results-container">
+                <div class="search-results-header">
+                    <h3>Search Results</h3>
+                    <span class="search-results-count">${books.length} ${books.length === 1 ? 'result' : 'results'}</span>
+                </div>
+                <div class="search-results-grid">
+                    ${resultsHtml}
+                </div>
+            </div>
+        `;
+
+    } catch (error) {
+        console.error("Error searching books:", error);
+        contentArea.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error searching books: ${error.message}
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadLibraryBooks()">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Library
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Update the fetchBookSuggestions function
+async function fetchBookSuggestions() {
+    let input = document.getElementById('searchInput').value.trim();
+    let autocompleteBox = document.getElementById('autocompleteBox');
+
+    if (input === "") {
+        autocompleteBox.style.display = "none";
+        return;
+    }
+
+    try {
+        let response = await fetch(`http://127.0.0.1:5000/search_books?query=${encodeURIComponent(input)}`);
+        if (!response.ok) {
+            throw new Error("Error fetching suggestions");
+        }
+        let books = await response.json();
+
+        if (books.length === 0) {
+            autocompleteBox.style.display = "none";
+            return;
+        }
+
+        // Generate HTML for autocomplete suggestions with book covers
+        autocompleteBox.innerHTML = books.map(book => `
+            <div onclick="selectSuggestion('${book.title}')">
+                <img src="${book.image_url || 'static/default_book_cover.png'}"
+                     alt="${book.title}"
+                     onerror="this.src='static/default_book_cover.png'">
+                <div class="book-info">
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-author">${book.author}</div>
+                </div>
+
+            </div>
+        `).join('');
+
+        autocompleteBox.style.display = "block";
+    } catch (error) {
+        console.error("Error fetching suggestions:", error);
+        autocompleteBox.style.display = "none";
+    }
+}
+
+// Function to handle selection of a suggestion
+function selectSuggestion(bookTitle) {
+    document.getElementById('searchInput').value = bookTitle;
+    document.getElementById('autocompleteBox').style.display = "none";
+    searchBooks();
+}
+// Attach the function to the search input
+document.getElementById('searchInput').addEventListener('input', fetchBookSuggestions);
+
+// Hide autocomplete box when clicking outside
+document.addEventListener("click", function(event) {
+    if (!event.target.closest(".search-container")) {
+        document.getElementById("autocompleteBox").style.display = "none";
+    }
+});
+
+// Attach the function to the search input
+document.getElementById('searchInput').addEventListener('input', fetchBookSuggestions);
+
+// Hide autocomplete box when clicking outside
+document.addEventListener("click", function(event) {
+    if (!event.target.closest(".search-container")) {
+        document.getElementById("autocompleteBox").style.display = "none";
+    }
+});
+
+        // Close modal
+        function closeModal() {
+            document.getElementById("modalOverlay").style.display = "none";
+            document.getElementById("modalOverlay").innerHTML = "";
+        }
+
+        // ====== HELPER FUNCTIONS ======
+        // Format date with time (e.g., "Jan 1, 2023, 2:30 PM")
+// Updated formatDateTime function with timezone adjustment
+function formatDateTime(date) {
+    if (!date) return "-";
+
+    // If date is a string, parse it first
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+    // Adjust for timezone offset
+    const adjustedDate = new Date(dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000));
+
+    const options = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    };
+
+    return adjustedDate.toLocaleDateString('en-US', options);
+}
+
+// Updated formatDate function with timezone adjustment
+function formatDate(dateString) {
+    if (!dateString) return "-";
+
+    const dateObj = new Date(dateString);
+    const adjustedDate = new Date(dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000));
+
+    const options = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    };
+
+    return adjustedDate.toLocaleDateString('en-US', options);
+}
+
+        function getStatusClass(status) {
+            return status === 'Overdue' ? 'checked-out' : 'available';
+        }
+
+// Notification System - Complete Frontend Implementation
+
+// Global variables
+let notifications = [];
+let unreadCount = 0;
+
+// Function to fetch notifications from the backend
+async function fetchNotifications() {
+    try {
+        // Get school_id from sessionStorage (assuming it's stored during login)
+        let schoolId = sessionStorage.getItem('schoolId');
+        if (!schoolId) {
+            console.error('School ID not found in session storage');
+            return;
+        }
+
+        const response = await fetch(`/api/notifications?school_id=${schoolId}`);
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        notifications = data.notifications || [];
+        updateNotificationBadge();
+
+        // If the modal is open, update its content
+        const modal = document.getElementById('notificationModal');
+        if (modal && modal.style.display === 'block') {
+            populateNotificationModal();
+        }
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+    }
+}
+
+// Function to fetch unread count only
+function fetchUnreadCount() {
+  fetch('/api/notifications/unread/count')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Server error: ' + response.status);
+      }
+      return response.json();
+    })
+    .then(data => {
+      unreadCount = data.unread_count;
+      document.getElementById('notificationCount').textContent = unreadCount > 0 ? unreadCount : '0';
+
+      // Show/hide the badge based on count
+      const badge = document.getElementById('notificationCount');
+      if (unreadCount > 0) {
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    })
+    .catch(error => console.error('Error fetching notification count:', error));
+}
+
+// Function to populate notification modal content
+function populateNotificationModal() {
+    const content = document.getElementById('notificationContent');
+    content.innerHTML = '';
+
+    if (notifications.length === 0) {
+        content.innerHTML = '<p class="no-notifications">No notifications</p>';
+    } else {
+        notifications.forEach(notification => {
+            const isPayment = notification.message.includes("payment") ||
+                             notification.message.includes("Thank you for settling");
+
+            const notifItem = document.createElement('div');
+            notifItem.className = `notification-item ${notification.is_read ? '' : 'unread'} ${isPayment ? 'payment-notification' : ''}`;
+
+            // Format the date
+            const date = new Date(notification.created_at);
+            const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+
+            notifItem.innerHTML = `
+                <div class="notification-message">
+                    ${isPayment ? '<i class="fas fa-money-bill-wave me-2"></i>' : ''}
+                    ${notification.message}
+                </div>
+                <div class="notification-time">${formattedDate}</div>
+            `;
+
+            // Add click handler to mark as read
+            notifItem.addEventListener('click', () => markAsRead(notification.id, notifItem));
+
+            content.appendChild(notifItem);
+        });
+    }
+}
+
+// Function to show notifications dropdown
+function showNotifications() {
+  // Create modal content if it doesn't exist
+  if (!document.getElementById('notificationModal')) {
+    const modal = document.createElement('div');
+    modal.id = 'notificationModal';
+    modal.className = 'notification-modal';
+
+    const header = document.createElement('div');
+    header.className = 'notification-header';
+    header.innerHTML = '<h3>Notifications</h3><button onclick="closeModal()">&times;</button>';
+
+    const content = document.createElement('div');
+    content.id = 'notificationContent';
+    content.className = 'notification-content';
+
+    modal.appendChild(header);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+  }
+
+  // Populate notifications
+  populateNotificationModal();
+
+  // Show modal and overlay
+  document.getElementById('modalOverlay').style.display = 'block';
+  document.getElementById('notificationModal').style.display = 'block';
+
+  // Fetch fresh notifications when opening
+  fetchNotifications();
+}
+
+// Function to mark notification as read
+async function markAsRead(notificationId, element) {
+  try {
+    const schoolId = sessionStorage.getItem('schoolId');
+    if (!schoolId) throw new Error("User not identified");
+
+    const response = await fetch(`/api/notifications/${notificationId}/read?school_id=${schoolId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) throw new Error("Failed to mark as read");
+
+    element.classList.remove('unread');
+    fetchUnreadCount(); // Refresh the counter
+  } catch (error) {
+    console.error("Mark read error:", error);
+  }
+}
+
+// Function to close the modal
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  document.getElementById('notificationModal').style.display = 'none';
+}
+
+// Function to update notification badge
+function updateNotificationBadge() {
+  // Count unread notifications
+  unreadCount = notifications.filter(n => !n.is_read).length;
+  document.getElementById('notificationCount').textContent = unreadCount > 0 ? unreadCount : '0';
+
+  // Show/hide badge
+  const badge = document.getElementById('notificationCount');
+  badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+}
+
+// Initialize when document is ready
+document.addEventListener('DOMContentLoaded', function() {
+  // Set up notification icon click handler
+  document.getElementById("notificationIcon").addEventListener("click", showNotifications);
+
+  // Set up modal overlay click handler to close when clicking outside
+  document.getElementById("modalOverlay").addEventListener("click", function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // Initial fetch of notifications
+  fetchNotifications();
+
+  // Set up polling for new notifications (every 30 seconds)
+  setInterval(fetchUnreadCount, 30000);
+});
+
+// Add this function to your kiosk dashboard JavaScript
+async function checkPaymentNotifications() {
+    try {
+        const schoolId = sessionStorage.getItem('schoolId');
+        if (!schoolId) return;
+
+        // Fetch unread payment notifications specifically
+        const response = await fetch(`/api/notifications?school_id=${schoolId}&type=payment`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const paymentNotifications = data.notifications.filter(n =>
+            n.message.includes("payment") || n.message.includes("Thank you for settling")
+        );
+
+        if (paymentNotifications.length > 0) {
+            // Show a special alert for payment notifications
+            paymentNotifications.forEach(notification => {
+                if (!notification.is_read) {
+                    showPaymentAlert(notification.message);
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Error checking payment notifications:", error);
+    }
+}
+
+function showPaymentAlert(message) {
+    // Create a more prominent alert for payments
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success payment-alert';
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.bottom = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '2000';
+    alertDiv.style.maxWidth = '300px';
+    alertDiv.innerHTML = `
+        <h5><i class="fas fa-check-circle me-2"></i>Payment Confirmed</h5>
+        <p>${message}</p>
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // Auto-close after 10 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 10000);
+}
+
+// Add this to your existing notification polling
+setInterval(() => {
+    fetchUnreadCount();
+    checkPaymentNotifications(); // Add this line
+}, 30000); // Check every 30 seconds
+
+
+
+        // ====== INITIALIZATION ======
+        document.addEventListener("DOMContentLoaded", function() {
+            // Set up all event listeners
+            document.getElementById("viewProfileButton").addEventListener("click", loadUserProfile);
+            document.getElementById("libraryBooksButton").addEventListener("click", loadLibraryBooks);
+            document.getElementById("borrowedBooksButton").addEventListener("click", loadBorrowedBooks);
+            document.getElementById("borrowingHistoryButton").addEventListener("click", loadBorrowingHistory);
+            document.getElementById("penaltiesButton").addEventListener("click", loadPenalties);
+            document.getElementById("reservedBookButton").addEventListener("click", loadReservedBooks);
+            document.getElementById("searchBooksButton").addEventListener("click", function() {
+                const query = document.getElementById("searchInput").value.trim();
+                if (query) searchBooks(query);
+            });
+
+            // Initialize the page
+            loadLibraryBooks();
+
+
+        });
+
+
+    </script>
+</body>
+</html>
