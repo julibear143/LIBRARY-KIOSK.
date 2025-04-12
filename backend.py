@@ -51,9 +51,13 @@ def close_db(exception):
     if db is not None:
         db.close()
 
-@app.route("/")
+@app.route('/')
 def home():
-    return render_template("index.html")
+    return "LIBRARY-KIOSK is working! 🎉", 200
+
+@app.route('/test')
+def test():
+    return jsonify({"status": "ok", "region": "Singapore"})
 
 
 ARDUINO_PORT = 'COM5'  # Your Arduino is on COM5
