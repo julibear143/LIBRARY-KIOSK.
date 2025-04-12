@@ -1746,135 +1746,167 @@ async function loadPenalties() {
 
         // Load reserved books
         async function loadReservedBooks() {
-            try {
-                document.getElementById("pageTitle").textContent = "Reserved Books";
-                document.getElementById("contentArea").innerHTML = `
-                    <div class="d-flex justify-content-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                `;
+    try {
+        document.getElementById("pageTitle").textContent = "Reserved Books";
+        document.getElementById("contentArea").innerHTML = `
+            <div class="d-flex justify-content-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
 
-                const response = await fetch('/get_reserved_books');
-                if (!response.ok) throw new Error("Failed to load reserved books");
-                const books = await response.json();
+        // Get school_id from sessionStorage
+        let schoolId = sessionStorage.getItem('schoolId');
+        if (!schoolId) {
+            throw new Error("User not identified");
+        }
 
-                let html = `<h3><i class="fas fa-bookmark me-2"></i>Your Reserved Books</h3>`;
+        const response = await fetch(`/get_user_reservations?school_id=${schoolId}`);
+        if (!response.ok) throw new Error("Failed to load reserved books");
+        const reservations = await response.json();
 
-                if (books.length === 0) {
-                    html += `
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            No books currently reserved
-                        </div>
-                    `;
-                } else {
-                    html += `
-                        <div class="books-grid">
-                            ${books.map(book => `
-                                <div class="book-card">
-                                    <div class="book-image-container">
-                                        <img src="${book.image_url || 'static/default_book_cover.png'}"
-                                             class="book-cover"
-                                             alt="${book.title}"
-                                             onerror="this.src='static/default_book_cover.png'">
-                                        <div class="book-type-badge reserve-badge">
-                                            Reserved
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <h5 class="book-title">${book.title}</h5>
-                                        <div class="book-meta">
-                                            <div class="meta-item">
-                                                <i class="fas fa-user-pen"></i>
-                                                <span>${book.author}</span>
-                                            </div>
-                                            <div class="meta-item">
-                                                <i class="fas fa-calendar-day"></i>
-                                                <span>Reserved until: ${formatDate(book.reserve_expiry)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer">
-                                        <button class="action-btn btn-danger" onclick="cancelReservation(${book.id})">
+        let html = `<h3><i class="fas fa-bookmark me-2"></i>Your Book Reservations</h3>`;
+
+        if (reservations.length === 0) {
+            html += `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No books currently reserved
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Author</th>
+                                <th>Status</th>
+                                <th>Request Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${reservations.map(reservation => `
+                                <tr>
+                                    <td>${reservation.title}</td>
+                                    <td>${reservation.author}</td>
+                                    <td>
+                                        <span class="badge ${getReservationStatusClass(reservation.status)}">
+                                            ${reservation.status}
+                                        </span>
+                                    </td>
+                                    <td>${formatDate(reservation.reservation_date)}</td>
+                                    <td>
+                                        ${reservation.status === 'Pending' ? `
+                                        <button class="btn btn-sm btn-danger" onclick="cancelReservation(${reservation.id})">
                                             <i class="fas fa-times"></i> Cancel
                                         </button>
-                                    </div>
-                                </div>
+                                        ` : ''}
+                                    </td>
+                                </tr>
                             `).join('')}
-                        </div>
-                    `;
-                }
-
-                document.getElementById("contentArea").innerHTML = html;
-            } catch (error) {
-                console.error("Error:", error);
-                document.getElementById("contentArea").innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        Error loading reserved books: ${error.message}
-                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadReservedBooks()">
-                            <i class="fas fa-sync-alt"></i> Try Again
-                        </button>
-                    </div>
-                `;
-            }
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
+
+        document.getElementById("contentArea").innerHTML = html;
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("contentArea").innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error loading reserved books: ${error.message}
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadReservedBooks()">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+function getReservationStatusClass(status) {
+    switch(status) {
+        case 'Approved': return 'bg-success';
+        case 'Rejected': return 'bg-danger';
+        case 'Pending': return 'bg-warning';
+        default: return 'bg-secondary';
+    }
+}
 
         // ====== ACTION FUNCTIONS ======
 
         // Reserve a book
-        async function reserveBook(bookId) {
-            try {
-                const response = await fetch('/reserve_book', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ book_id: bookId })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert(result.message);
-                    loadLibraryBooks(); // Refresh the list
-                } else {
-                    alert(result.message || "Failed to reserve book");
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert("An error occurred while reserving the book");
-            }
+       async function reserveBook(bookId) {
+    try {
+        // Get school_id from sessionStorage
+        let schoolId = sessionStorage.getItem('schoolId');
+        if (!schoolId) {
+            alert("Please login first");
+            return;
         }
+
+        // Show loading/confirmation message
+        const confirmation = confirm("Are you sure you want to reserve this book? You'll be notified when the admin approves your request.");
+        if (!confirmation) return;
+
+        // Send reservation request
+        const response = await fetch('/reserve_book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                book_id: bookId,
+                school_id: schoolId
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert("Reservation request submitted! Please wait for admin approval.");
+            // Optionally refresh the book details view
+            viewBookDetails(bookId);
+        } else {
+            throw new Error(result.message || "Failed to reserve book");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Error reserving book: " + error.message);
+    }
+}
 
         // Cancel a reservation
-        async function cancelReservation(bookId) {
-            if (!confirm("Are you sure you want to cancel this reservation?")) return;
+       async function cancelReservation(reservationId) {
+    if (!confirm("Are you sure you want to cancel this reservation?")) return;
 
-            try {
-                const response = await fetch('/cancel_reservation', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ book_id: bookId })
-                });
+    try {
+        const response = await fetch('/cancel_reservation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reservation_id: reservationId })
+        });
 
-                const result = await response.json();
+        const result = await response.json();
 
-                if (response.ok) {
-                    alert(result.message);
-                    loadReservedBooks(); // Refresh the list
-                } else {
-                    alert(result.message || "Failed to cancel reservation");
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert("An error occurred while canceling the reservation");
-            }
+        if (response.ok) {
+            alert(result.message);
+            loadReservedBooks(); // Refresh the list
+        } else {
+            throw new Error(result.message || "Failed to cancel reservation");
         }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Error canceling reservation: " + error.message);
+    }
+}
 
         // Borrow a book
         async function borrowBook(bookId) {

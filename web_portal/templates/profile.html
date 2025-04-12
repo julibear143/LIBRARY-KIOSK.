@@ -39,22 +39,19 @@
             font-weight: 600;
         }
 
-        .profile-info-card {
+        /* TEACHER-SPECIFIC STYLES */
+        .teacher-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .teacher-info-item {
             background: var(--light-gray);
+            padding: 15px;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
-
-        .info-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .info-item {
-            flex: 1 1 200px;
-            margin-bottom: 10px;
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 0;
         }
 
         .info-label {
@@ -62,10 +59,12 @@
             color: var(--secondary-color);
             display: block;
             margin-bottom: 3px;
+            font-size: 0.9rem;
         }
 
         .info-value {
             color: #555;
+            font-size: 1rem;
         }
 
         .section-title {
@@ -150,9 +149,9 @@
                 <h2 class="profile-title" id="profileTitle"></h2>
             </div>
 
-            <!-- User Information Card -->
+            <!-- User Information Card - Teacher Optimized -->
             <div class="profile-info-card">
-                <div class="info-row" id="profileInfo"></div>
+                <div class="teacher-info-grid" id="profileInfo"></div>
             </div>
 
             <!-- Borrowed Books Section -->
@@ -192,7 +191,7 @@
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", async function () {
+         document.addEventListener("DOMContentLoaded", async function () {
             const urlParams = new URLSearchParams(window.location.search);
             const userId = urlParams.get("id");
 
@@ -215,48 +214,77 @@
                     throw new Error(userProfile.message || "Error fetching profile.");
                 }
 
-                // Display user info
-                document.getElementById("profileTitle").innerText = `${userProfile.name}'s Profile`;
-                document.getElementById("profileInfo").innerHTML = `
-                    <div class="info-item">
-                        <span class="info-label">Role</span>
-                        <span class="info-value">${userProfile.role}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">School ID</span>
-                        <span class="info-value">${userProfile.school_id}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">RFID Number</span>
-                        <span class="info-value">${userProfile.rfid_number || 'N/A'}</span>
-                    </div>
-                    ${userProfile.role !== 'Teacher' ? `
-                    <div class="info-item">
-                        <span class="info-label">Year Level</span>
-                        <span class="info-value">${userProfile.year_level || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Course</span>
-                        <span class="info-value">${userProfile.course || 'N/A'}</span>
-                    </div>` : ''}
-                    ${userProfile.role === 'Teacher' ? `
-                    <div class="info-item">
-                        <span class="info-label">Department</span>
-                        <span class="info-value">${userProfile.department || 'N/A'}</span>
-                    </div>` : ''}
-                    <div class="info-item">
-                        <span class="info-label">Email</span>
-                        <span class="info-value">${userProfile.email || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Contact</span>
-                        <span class="info-value">${userProfile.contact_number || 'N/A'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Gender</span>
-                        <span class="info-value">${userProfile.gender || 'N/A'}</span>
-                    </div>
-                `;
+                // Display user info with teacher-specific layout
+                document.getElementById("profileTitle").innerHTML = `<i class="fas fa-user-circle me-2"></i>${userProfile.name}'s Profile`;
+
+                if (userProfile.role === 'Teacher') {
+                    document.getElementById("profileInfo").innerHTML = `
+                        <div class="teacher-info-item">
+                            <span class="info-label">Role</span>
+                            <span class="info-value">${userProfile.role}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">School ID</span>
+                            <span class="info-value">${userProfile.school_id}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">RFID Number</span>
+                            <span class="info-value">${userProfile.rfid_number || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Department</span>
+                            <span class="info-value">${userProfile.department || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Email</span>
+                            <span class="info-value">${userProfile.email || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Contact</span>
+                            <span class="info-value">${userProfile.contact_number || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Gender</span>
+                            <span class="info-value">${userProfile.gender || 'N/A'}</span>
+                        </div>
+                    `;
+                } else {
+                    // Default layout for non-teachers
+                    document.getElementById("profileInfo").innerHTML = `
+                        <div class="teacher-info-item">
+                            <span class="info-label">Role</span>
+                            <span class="info-value">${userProfile.role}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">School ID</span>
+                            <span class="info-value">${userProfile.school_id}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">RFID Number</span>
+                            <span class="info-value">${userProfile.rfid_number || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Year Level</span>
+                            <span class="info-value">${userProfile.year_level || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Course</span>
+                            <span class="info-value">${userProfile.course || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Email</span>
+                            <span class="info-value">${userProfile.email || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Contact</span>
+                            <span class="info-value">${userProfile.contact_number || 'N/A'}</span>
+                        </div>
+                        <div class="teacher-info-item">
+                            <span class="info-label">Gender</span>
+                            <span class="info-value">${userProfile.gender || 'N/A'}</span>
+                        </div>
+                    `;
+                }
 
                 // Display borrowed books
                 const borrowedBooks = userProfile.borrowedBooks?.length
@@ -276,24 +304,35 @@
 
                 document.getElementById("borrowedBooks").innerHTML = borrowedBooks;
 
-                // Display penalties
-                const penaltiesEl = document.getElementById("penalties");
-                if (userProfile.penalties > 0) {
-                    penaltiesEl.innerHTML = `
-                        <span class="penalty-badge">
-                            <i class="fas fa-exclamation-circle me-1"></i>
-                            Unpaid: ₱${userProfile.penalties.toFixed(2)}
-                        </span>
-                        <small class="text-muted">Please settle at the library counter</small>
-                    `;
-                } else {
-                    penaltiesEl.innerHTML = `
-                        <span class="text-success">
-                            <i class="fas fa-check-circle me-1"></i>
-                            No unpaid penalties
-                        </span>
-                    `;
-                }
+                // Display penalties - FIXED THE ISSUE HERE
+               // Display penalties - UPDATED VERSION
+        const penaltiesEl = document.getElementById("penalties");
+        const penaltiesValue = Number(userProfile.total_penalties) || 0;
+        const unpaidPenalties = Number(userProfile.unpaid_penalties) || 0;
+
+        if (unpaidPenalties > 0) {
+            penaltiesEl.innerHTML = `
+                <span class="penalty-badge">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Unpaid: ₱${unpaidPenalties.toFixed(2)}
+                </span>
+                <small class="text-muted">Please settle at the library counter</small>
+            `;
+        } else if (penaltiesValue > 0) {
+            penaltiesEl.innerHTML = `
+                <span class="text-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    All penalties paid (₱${penaltiesValue.toFixed(2)})
+                </span>
+            `;
+        } else {
+            penaltiesEl.innerHTML = `
+                <span class="text-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    No penalty history
+                </span>
+            `;
+        }
 
             } catch (error) {
                 document.getElementById("profileInfo").innerHTML = `

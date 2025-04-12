@@ -236,6 +236,7 @@ def get_users():
         'role': user['role']
     } for user in users])
 
+
 @app.route('/get_user_profile')
 def get_user_profile():
     user_id = request.args.get('id')
@@ -243,51 +244,61 @@ def get_user_profile():
         return jsonify({"message": "User ID is required"}), 400
 
     db, cursor = get_db()
-    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-    user = cursor.fetchone()
+    try:
+        # Get basic user info
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
 
-    if not user:
-        return jsonify({"message": "User not found"}), 404
+        if not user:
+            return jsonify({"message": "User not found"}), 404
 
-    # Fixed: Join with books table to get titles
-    cursor.execute("""
-        SELECT 
-            b.title AS book_title,
-            bb.borrow_date,
-            bb.return_date,
-            bb.status
-        FROM borrowed_books bb
-        JOIN books b ON bb.book_id = b.id
-        WHERE bb.user_id = %s
-    """, (user_id,))
-    borrowed_books = cursor.fetchall()
+        # Get borrowed books
+        cursor.execute("""
+            SELECT b.title AS book_title, bb.borrow_date, 
+                   bb.return_date, bb.status, bb.payment_status
+            FROM borrowed_books bb
+            JOIN books b ON bb.book_id = b.id
+            WHERE bb.user_id = %s
+        """, (user_id,))
+        borrowed_books = cursor.fetchall()
 
-    # Fetch penalties
-    cursor.execute("SELECT SUM(penalty_amount) as total_penalties FROM penalties WHERE user_id = %s", (user_id,))
-    penalty_result = cursor.fetchone()
-    total_penalties = penalty_result['total_penalties'] if penalty_result['total_penalties'] else 0
+        # Get penalty details - UPDATED QUERY
+        cursor.execute("""
+            SELECT 
+                SUM(penalty_amount) as total_penalties,
+                SUM(CASE WHEN status = 'Unpaid' THEN penalty_amount ELSE 0 END) as unpaid_penalties
+            FROM penalties 
+            WHERE user_id = %s
+        """, (user_id,))
+        penalty_result = cursor.fetchone()
 
-    user_profile = {
-        "school_id": user["school_id"],
-        "name": user["name"],
-        "role": user["role"],
-        "rfid_number": user["rfid_number"],
-        "email": user["email"],
-        "contact_number": user["contact_number"],
-        "gender": user["gender"],
-        "year_level": user["year_level"],
-        "course": user["course"],
-        "department": user["department"],
-        "borrowedBooks": [{
-            "title": book["book_title"],
-            "borrow_date": book["borrow_date"],
-            "return_date": book["return_date"],
-            "status": book["status"]
-        } for book in borrowed_books],
-        "penalties": total_penalties
-    }
+        user_profile = {
+            # User info
+            "school_id": user["school_id"],
+            "name": user["name"],
+            "role": user["role"],
+            "rfid_number": user["rfid_number"],
+            # ... other user fields ...
 
-    return jsonify(user_profile)
+            # Borrowed books
+            "borrowedBooks": [{
+                "title": book["book_title"],
+                "borrow_date": book["borrow_date"],
+                "return_date": book["return_date"],
+                "status": book["status"],
+                "payment_status": book.get("payment_status", "N/A")
+            } for book in borrowed_books],
+
+            # Penalty info - UPDATED FIELDS
+            "total_penalties": float(penalty_result["total_penalties"] or 0),
+            "unpaid_penalties": float(penalty_result["unpaid_penalties"] or 0)
+        }
+
+        return jsonify(user_profile)
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+    finally:
+        cursor.close()
 
 @app.route('/get_users_user_profile')
 def get_users_user_profile():
@@ -431,7 +442,7 @@ def book_details(book_id):
 
     # Fetch borrowing history
     cursor.execute("""
-        SELECT u.name AS borrower_name, b.borrow_date, b.return_date, u.school_id, u.rfid_number, u.role, b.status
+        SELECT u.name AS borrower_name, b.borrow_date, b.due_date, b.return_date, u.school_id, u.rfid_number, u.role, b.status
         FROM borrowed_books b 
         JOIN users u ON b.user_id = u.id 
         WHERE b.book_id = %s
@@ -462,6 +473,7 @@ def book_details(book_id):
                 "rfid_number": record["rfid_number"],
                 "role": record["role"],
                 "borrow_date": record["borrow_date"],
+                "due_date": record["due_date"],
                 "return_date": record["return_date"],
                 "status": record["status"],
             }
@@ -872,36 +884,255 @@ def mark_fine_paid(user_id):
 @app.route("/get_available_books", methods=["GET"])
 def get_available_books():
     db, cursor = get_db()
-    cursor.execute("SELECT * FROM books WHERE status IN ('Available', 'Checked Out')")
-    books = cursor.fetchall()
-    cursor.close()
-    return jsonify(books)
+    try:
+        cursor.execute("""
+            SELECT * FROM books 
+            WHERE status IN ('Available', 'Reserved', 'Checked Out')
+            ORDER BY 
+                CASE 
+                    WHEN status = 'Available' THEN 1
+                    WHEN status = 'Reserved' THEN 2
+                    ELSE 3
+                END
+        """)
+        books = cursor.fetchall()
+        return jsonify(books)
+    except mysql.connector.Error as err:
+        return jsonify({"message": str(err)}), 500
+    finally:
+        cursor.close()
 
+
+# Reservation Routes
 @app.route('/reserve_book', methods=['POST'])
 def reserve_book():
     db, cursor = get_db()
     data = request.json
-    school_id = data['school_id']
-    book_id = data['book_id']
+    school_id = data.get('school_id')
+    book_id = data.get('book_id')
 
-    # Retrieve user_id from school_id
-    cursor.execute("SELECT id FROM users WHERE school_id = %s", (school_id,))
-    user = cursor.fetchone()
+    if not school_id or not book_id:
+        return jsonify({"message": "School ID and Book ID are required"}), 400
 
-    if not user:
-        return jsonify({"message": "User not found"}), 404
+    try:
+        # Get user_id from school_id
+        cursor.execute("SELECT id FROM users WHERE school_id = %s", (school_id,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({"message": "User not found"}), 404
 
-    user_id = user["id"]
-    reservation_date = datetime.now()
+        # Check if book exists and is available
+        cursor.execute("SELECT id, status FROM books WHERE id = %s", (book_id,))
+        book = cursor.fetchone()
+        if not book:
+            return jsonify({"message": "Book not found"}), 404
 
-    cursor.execute("""
-        INSERT INTO reservations (user_id, book_id, reservation_date, status) 
-        VALUES (%s, %s, %s, 'reserved')
-    """, (user_id, book_id, reservation_date))
+        if book['status'] not in ['Available', 'Reserved']:
+            return jsonify({"message": "Book is not available for reservation"}), 400
 
-    db.commit()
-    return jsonify({"message": "Book reserved successfully!"}), 201
+        # Check for existing pending reservation
+        cursor.execute("""
+            SELECT id FROM reservations 
+            WHERE user_id = %s AND book_id = %s AND status = 'Pending'
+        """, (user['id'], book_id))
+        existing_reservation = cursor.fetchone()
+        if existing_reservation:
+            return jsonify({"message": "You already have a pending reservation for this book"}), 400
 
+        # Create reservation
+        reservation_date = datetime.now()
+        cursor.execute("""
+            INSERT INTO reservations (user_id, book_id, reservation_date, status) 
+            VALUES (%s, %s, %s, 'Pending')
+        """, (user['id'], book_id, reservation_date))
+
+        # Update book status to Reserved if it was Available
+        if book['status'] == 'Available':
+            cursor.execute("""
+                UPDATE books 
+                SET status = 'Reserved' 
+                WHERE id = %s
+            """, (book_id,))
+
+        db.commit()
+        return jsonify({"message": "Book reservation requested successfully!"}), 201
+
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"message": str(err)}), 500
+    finally:
+        cursor.close()
+
+
+@app.route('/get_user_reservations', methods=['GET'])
+def get_user_reservations():
+    school_id = request.args.get('school_id')
+    if not school_id:
+        return jsonify({"message": "School ID is required"}), 400
+
+    db, cursor = get_db()
+    try:
+        cursor.execute("""
+            SELECT r.id, b.title, b.author, r.status, r.reservation_date,
+                   b.status as book_status
+            FROM reservations r
+            JOIN books b ON r.book_id = b.id
+            JOIN users u ON r.user_id = u.id
+            WHERE u.school_id = %s
+            ORDER BY r.reservation_date DESC
+        """, (school_id,))
+        reservations = cursor.fetchall()
+
+        # Convert datetime to string for JSON
+        for res in reservations:
+            if isinstance(res['reservation_date'], datetime):
+                res['reservation_date'] = res['reservation_date'].strftime('%Y-%m-%d %H:%M:%S')
+
+        return jsonify(reservations)
+    except mysql.connector.Error as err:
+        return jsonify({"message": str(err)}), 500
+    finally:
+        cursor.close()
+
+
+@app.route('/get_all_reservations', methods=['GET'])
+def get_all_reservations():
+    db, cursor = get_db()
+    try:
+        cursor.execute("""
+            SELECT 
+                r.id, 
+                u.name as user_name, 
+                u.role as user_role,
+                u.school_id,
+                b.title as book_title, 
+                b.author as book_author, 
+                r.status, 
+                r.reservation_date
+            FROM reservations r
+            JOIN users u ON r.user_id = u.id
+            JOIN books b ON r.book_id = b.id
+            ORDER BY r.reservation_date DESC
+        """)
+        reservations = cursor.fetchall()
+
+        # Convert datetime to string for JSON serialization
+        for res in reservations:
+            if isinstance(res['reservation_date'], datetime):
+                res['reservation_date'] = res['reservation_date'].isoformat()
+
+        return jsonify(reservations)
+    except mysql.connector.Error as err:
+        return jsonify({"message": str(err)}), 500
+    finally:
+        cursor.close()
+
+@app.route('/cancel_reservation', methods=['POST'])
+def cancel_reservation():
+    db, cursor = get_db()
+    data = request.json
+    reservation_id = data.get('reservation_id')
+
+    if not reservation_id:
+        return jsonify({"message": "Reservation ID is required"}), 400
+
+    try:
+        # Verify reservation exists and is pending
+        cursor.execute("""
+            SELECT r.id, r.book_id, b.status as book_status
+            FROM reservations r
+            JOIN books b ON r.book_id = b.id
+            WHERE r.id = %s AND r.status = 'Pending'
+        """, (reservation_id,))
+        reservation = cursor.fetchone()
+        if not reservation:
+            return jsonify({"message": "Pending reservation not found or already processed"}), 404
+
+        # Delete reservation
+        cursor.execute("DELETE FROM reservations WHERE id = %s", (reservation_id,))
+
+        # Check if there are other reservations for this book
+        cursor.execute("""
+            SELECT COUNT(*) as reservation_count
+            FROM reservations
+            WHERE book_id = %s AND status = 'Approved'
+        """, (reservation['book_id'],))
+        other_reservations = cursor.fetchone()
+
+        # Update book status back to Available if no other reservations exist
+        if reservation['book_status'] == 'Reserved' and other_reservations['reservation_count'] == 0:
+            cursor.execute("""
+                UPDATE books 
+                SET status = 'Available' 
+                WHERE id = %s
+            """, (reservation['book_id'],))
+
+        db.commit()
+        return jsonify({"message": "Reservation cancelled successfully"}), 200
+
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"message": str(err)}), 500
+    finally:
+        cursor.close()
+
+
+@app.route('/update_reservation_status', methods=['POST'])
+def update_reservation_status():
+    db, cursor = get_db()
+    data = request.json
+    reservation_id = data.get('reservation_id')
+    status = data.get('status')
+
+    if not reservation_id or not status:
+        return jsonify({"message": "Reservation ID and status are required"}), 400
+
+    if status not in ['Approved', 'Rejected']:
+        return jsonify({"message": "Invalid status"}), 400
+
+    try:
+        # Verify reservation exists and is pending
+        cursor.execute("""
+            SELECT r.id, r.user_id, r.book_id, b.title, b.status as book_status
+            FROM reservations r
+            JOIN books b ON r.book_id = b.id
+            WHERE r.id = %s AND r.status = 'Pending'
+        """, (reservation_id,))
+        reservation = cursor.fetchone()
+        if not reservation:
+            return jsonify({"message": "Pending reservation not found or already processed"}), 404
+
+        # Update reservation status
+        cursor.execute("""
+            UPDATE reservations 
+            SET status = %s 
+            WHERE id = %s
+        """, (status, reservation_id))
+
+        # Create notification for user
+        message = f"Your reservation for '{reservation['title']}' has been {status.lower()}. " + \
+                 ("Please visit the library front desk to borrow the book." if status == 'Approved' else "")
+        cursor.execute("""
+            INSERT INTO notifications (user_id, message)
+            VALUES (%s, %s)
+        """, (reservation['user_id'], message))
+
+        # If approved, update book status to Reserved
+        if status == 'Approved':
+            cursor.execute("""
+                UPDATE books 
+                SET status = 'Reserved' 
+                WHERE id = %s
+            """, (reservation['book_id'],))
+
+        db.commit()
+        return jsonify({"message": f"Reservation {status.lower()} successfully"}), 200
+
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"message": str(err)}), 500
+    finally:
+        cursor.close()
 
 
 # Get penalties with details(User Dashboard)
@@ -1066,6 +1297,43 @@ def mark_notification_read(notification_id):
         if 'cursor' in locals():
             cursor.close()
 
+
+@app.route('/remove_user', methods=['POST'])
+def remove_user():
+    try:
+        data = request.get_json()
+        user_id = data.get('id')
+
+        if not user_id:
+            return jsonify({"message": "User ID is required"}), 400
+
+        db, cursor = get_db()
+
+        # First check if user has borrowed books
+        cursor.execute("SELECT COUNT(*) as count FROM borrowed_books WHERE user_id = %s AND status = 'borrowed'",
+                       (user_id,))
+        borrowed_count = cursor.fetchone()['count']
+
+        if borrowed_count > 0:
+            return jsonify({"message": "Cannot remove user with borrowed books"}), 400
+
+        # Delete user
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        db.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"message": "User not found"}), 404
+
+        return jsonify({"message": "User removed successfully"}), 200
+
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"message": str(err)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+
+
 # Kiosk Part
 @app.route("/rfid_login", methods=["POST"])
 def rfid_login():
@@ -1105,17 +1373,20 @@ def kiosk_search_books():
         return jsonify({"message": "Query parameter is required."}), 400
 
     db, cursor = get_db()
-    cursor.execute("""
-        SELECT id, title, author, isbn, image_url, status
-        FROM books 
-        WHERE (title LIKE %s OR author LIKE %s OR isbn LIKE %s)
-        AND status IN ('Available', 'Checked Out')
-    """, (f'%{query}%', f'%{query}%', f'%{query}%'))
+    try:
+        cursor.execute("""
+            SELECT id, title, author, isbn, image_url, status, book_type
+            FROM books 
+            WHERE (title LIKE %s OR author LIKE %s OR isbn LIKE %s)
+            AND status IN ('Available', 'Reserved', 'Checked Out')
+        """, (f'%{query}%', f'%{query}%', f'%{query}%'))
 
-    books = cursor.fetchall()
-    cursor.close()
-
-    return jsonify(books)
+        books = cursor.fetchall()
+        return jsonify(books)
+    except mysql.connector.Error as err:
+        return jsonify({"message": str(err)}), 500
+    finally:
+        cursor.close()
 
 @app.route("/get_kiosk_user_profile")
 def get_kiosk_user_profile():
@@ -1325,14 +1596,27 @@ def return_book():
             WHERE id = %s
         """, (return_date, penalty, status, borrowing['id']))
 
-        # 4. Update book status
+        # 4. Check if there are pending reservations for this book
+        cursor.execute("""
+            SELECT COUNT(*) as reservation_count
+            FROM reservations
+            WHERE book_id = %s AND status = 'Approved'
+        """, (book_id,))
+        reservation_count = cursor.fetchone()['reservation_count']
+
+        # 5. Update book status based on reservations
+        if reservation_count > 0:
+            new_status = 'Reserved'
+        else:
+            new_status = 'Available'
+
         cursor.execute("""
             UPDATE books 
-            SET status = 'Available' 
+            SET status = %s 
             WHERE id = %s
-        """, (book_id,))
+        """, (new_status, book_id))
 
-        # 5. Handle penalty record (updated logic)
+        # 6. Handle penalty record
         if penalty > 0:
             # Check if pending penalty exists
             cursor.execute("""
@@ -1358,10 +1642,10 @@ def return_book():
                     VALUES (%s, %s, %s, 'Unpaid', %s)
                 """, (user_id, borrowing['id'], penalty, return_date))
 
-        # 6. Commit transaction
+        # 7. Commit transaction
         db.commit()
 
-        # 7. Prepare receipt data
+        # 8. Prepare receipt data
         cursor.execute("""
             SELECT b.title, b.author, b.isbn, b.barcode, b.book_type,
                    u.name, u.school_id, u.rfid_number, u.role
@@ -1464,6 +1748,7 @@ def get_return_details(book_id):
     cursor.close()
     return jsonify(return_details)
 
+
 @app.route('/confirm_borrow', methods=['POST'])
 def confirm_borrow():
     if "user_id" not in session:
@@ -1482,18 +1767,32 @@ def confirm_borrow():
         # Start transaction
         cursor.execute("START TRANSACTION")
 
-        # 1. Check if book exists and is available
+        # 1. Check if book exists and is available or reserved for this user
         cursor.execute("""
-            SELECT id, status, book_type 
-            FROM books 
-            WHERE id = %s FOR UPDATE
+            SELECT b.id, b.status, b.book_type 
+            FROM books b
+            WHERE b.id = %s FOR UPDATE
         """, (book_id,))
         book = cursor.fetchone()
 
         if not book:
             return jsonify({"message": "Book not found.", "success": False}), 404
 
-        if book['status'] != 'Available':
+        # Check if book is reserved for this user
+        if book['status'] == 'Reserved':
+            cursor.execute("""
+                SELECT id FROM reservations 
+                WHERE user_id = %s AND book_id = %s AND status = 'Approved'
+            """, (user_id, book_id))
+            reservation = cursor.fetchone()
+
+            if not reservation:
+                return jsonify({
+                    "message": "This book is reserved for another user.",
+                    "success": False
+                }), 400
+
+        elif book['status'] != 'Available':
             return jsonify({
                 "message": "Book is not available for borrowing.",
                 "success": False
@@ -1505,7 +1804,6 @@ def confirm_borrow():
         if not user:
             return jsonify({"message": "User not found.", "success": False}), 404
 
-        # === NEW: BACKEND BORROWING LIMIT CHECK ===
         cursor.execute("""
             SELECT COUNT(*) as current_count 
             FROM borrowed_books 
@@ -1519,13 +1817,12 @@ def confirm_borrow():
             return jsonify({
                 "message": f"You've reached your borrowing limit ({max_allowed} books). Please return books first.",
                 "success": False,
-                "limit_reached": True  # New flag for frontend handling
+                "limit_reached": True
             }), 400
-        # === END OF NEW VALIDATION ===
 
         # 3. Calculate loan period
         if user['role'] == 'Student':
-            loan_period = 1 if book['book_type'] == 'Reserve' else 7  # Fixed reserve period (was 1)
+            loan_period = 1 if book['book_type'] == 'Reserve' else 7
         elif user['role'] == 'Teacher':
             loan_period = 152  # 5 months for Teacher
         else:
@@ -1541,17 +1838,25 @@ def confirm_borrow():
             VALUES (%s, %s, %s, %s, 'borrowed', 'Unpaid')
         """, (user_id, book_id, borrow_date, due_date))
 
-        # 5. Update book status
+        # 5. Update book status to Borrowed
         cursor.execute("""
             UPDATE books 
-            SET status = 'Checked Out' 
+            SET status = 'Borrowed' 
             WHERE id = %s
         """, (book_id,))
 
-        # 6. Commit transaction
+        # 6. If this was a reserved book, update the reservation status
+        if book['status'] == 'Reserved':
+            cursor.execute("""
+                UPDATE reservations 
+                SET status = 'Completed' 
+                WHERE user_id = %s AND book_id = %s AND status = 'Approved'
+            """, (user_id, book_id))
+
+        # 7. Commit transaction
         db.commit()
 
-        # 7. Prepare receipt data
+        # 8. Prepare receipt data
         cursor.execute("""
             SELECT b.title, b.author, b.isbn, b.barcode, b.book_type, b.lcc_classification,
                    u.name, u.school_id, u.rfid_number, u.role
@@ -1564,14 +1869,14 @@ def confirm_borrow():
         return jsonify({
             "message": "Book borrowing confirmed!",
             "success": True,
-            "due_date": due_date.strftime("%Y-%m-%d %H:%M:%S"),  # More precise timestamp
+            "due_date": due_date.strftime("%Y-%m-%d %H:%M:%S"),
             "receipt_data": {
                 "book_title": receipt_data['title'],
                 "book_author": receipt_data['author'],
                 "book_isbn": receipt_data['isbn'],
                 "book_barcode": receipt_data['barcode'],
                 "book_type": receipt_data['book_type'],
-                "book_category": receipt_data['lcc_classification'],  # Added missing field
+                "book_category": receipt_data['lcc_classification'],
                 "borrower_name": receipt_data['name'],
                 "school_id": receipt_data['school_id'],
                 "rfid_number": receipt_data['rfid_number'],
@@ -1587,7 +1892,7 @@ def confirm_borrow():
         return jsonify({
             "message": f"Database error: {str(err)}",
             "success": False,
-            "error_type": "database"  # New field for error categorization
+            "error_type": "database"
         }), 500
     except Exception as e:
         db.rollback()
@@ -1596,6 +1901,43 @@ def confirm_borrow():
             "success": False,
             "error_type": "general"
         }), 500
+    finally:
+        cursor.close()
+
+
+@app.route('/check_unpaid_penalties', methods=['GET'])
+def check_unpaid_penalties():
+    if "user_id" not in session:
+        return jsonify({"message": "Unauthorized"}), 401
+
+    db, cursor = get_db()
+    user_id = session["user_id"]
+
+    try:
+        # Check for unpaid penalties
+        cursor.execute("""
+            SELECT SUM(penalty_amount) as total_unpaid
+            FROM penalties
+            WHERE user_id = %s AND status = 'Unpaid'
+        """, (user_id,))
+        penalty_result = cursor.fetchone()
+        total_unpaid = penalty_result['total_unpaid'] if penalty_result['total_unpaid'] else 0
+
+        if total_unpaid > 0:
+            return jsonify({
+                "has_unpaid_penalties": True,
+                "total_unpaid": float(total_unpaid),
+                "message": f"You have ₱{total_unpaid:.2f} in unpaid penalties. Please settle them to borrow books."
+            })
+
+        return jsonify({
+            "has_unpaid_penalties": False,
+            "total_unpaid": 0,
+            "message": "No unpaid penalties found"
+        })
+
+    except mysql.connector.Error as err:
+        return jsonify({"message": str(err)}), 500
     finally:
         cursor.close()
 
