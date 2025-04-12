@@ -10,7 +10,7 @@ import serial
 import time
 
 app = Flask(__name__, template_folder=os.path.join("web_portal", "templates"))
-app.secret_key = "your-strong-secret-key"
+app.secret_key = os.environ.get('SECRET_KEY')  # New secure version
 
 
 
