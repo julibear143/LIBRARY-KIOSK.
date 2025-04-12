@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, g, redirect
 from datetime import datetime, timedelta
+from gevent import monkey
+monkey.patch_all()  # Must be at VERY TOP of file (before other imports)
 import mysql.connector
 import hashlib
 import os
