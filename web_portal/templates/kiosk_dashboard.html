@@ -1943,12 +1943,11 @@ function displayReturnReceipt(returnData) {
     document.getElementById('returnBookReceiptPopup').style.display = "block";
     document.getElementById('overlay').style.display = "block";
 }
-
-// Process the actual return after confirmation
 async function confirmReturn() {
     if (!selectedBookForReturn) return;
 
     try {
+        // First process the return in your database
         const response = await fetch('/return_book', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1965,12 +1964,15 @@ async function confirmReturn() {
             updateBookStatus(selectedBookForReturn.id, 'Available');
 
             // 3. Show success message
-            showAlert('Book returned successfully!', 'success');
+            showAlert('Book returned successfully! Please insert the book when the door opens.', 'success');
 
-            // 4. Close receipt popup
+            // 4. Signal Arduino to open door
+            await signalArduinoToOpenDoor();
+
+            // 5. Close receipt popup
             closeReturnBookReceipt();
 
-            // 5. Refresh unreturned books list
+            // 6. Refresh unreturned books list
             returnBook();
         } else {
             showAlert(data.message || "Return failed", 'error');
@@ -1981,7 +1983,25 @@ async function confirmReturn() {
     }
 }
 
+// Add this new function to communicate with Arduino via Flask backend
+async function signalArduinoToOpenDoor() {
+    try {
+        // Send a command to the Flask endpoint that communicates with Arduino
+        const response = await fetch('/signal_arduino', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: 'open_door' })
+        });
 
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || "Failed to signal door opening");
+        }
+    } catch (error) {
+        console.error("Error signaling Arduino:", error);
+        showAlert("Failed to open return door. Please contact staff for assistance.", 'error');
+    }
+}
         // ================== UTILITY FUNCTIONS ================== //
         function updateBookStatus(bookId, newStatus) {
             // Update status in the book list

@@ -1,0 +1,30 @@
+# Python and cache files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.python
+
+# Environment and IDE files
+env/
+.venv/
+.vscode/
+.idea/
+
+# Database and logs
+*.sqlite3
+*.db
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Local uploads (if applicable)
+uploads/
+static/uploads/  # Exclude if you handle uploads via cloud storage
+
+# Development configs
+config_local.py
+*.env
+secrets.json

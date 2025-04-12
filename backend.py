@@ -4,20 +4,42 @@ import mysql.connector
 import hashlib
 import os
 import json
+import serial
+import time
 
 app = Flask(__name__, template_folder=os.path.join("web_portal", "templates"))
 app.secret_key = "your-strong-secret-key"
 
-DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "$Hevery143",
-    "database": "julibeardb"
-}
+
+
+def get_db_config():
+    if os.environ.get('RENDER'):
+        # Render PostgreSQL configuration
+        return {
+            "host": os.environ.get('PGHOST'),
+            "user": os.environ.get('PGUSER'),
+            "password": os.environ.get('PGPASSWORD'),
+            "database": os.environ.get('PGDATABASE'),
+            "port": os.environ.get('PGPORT', 5432)
+        }
+    else:
+        # Local MySQL configuration
+        return {
+            "host": "localhost",
+            "user": "root",
+            "password": "$Hevery143",
+            "database": "julibeardb"
+        }
 
 def get_db():
     if "db" not in g:
-        g.db = mysql.connector.connect(**DB_CONFIG)
+        config = get_db_config()
+        if os.environ.get('RENDER'):
+            # PostgreSQL connection
+            g.db = psycopg2.connect(**config)
+        else:
+            # MySQL connection
+            g.db = mysql.connector.connect(**config)
         g.cursor = g.db.cursor(dictionary=True)
     return g.db, g.cursor
 
@@ -30,6 +52,70 @@ def close_db(exception):
 @app.route("/")
 def home():
     return render_template("index.html")
+
+
+ARDUINO_PORT = 'COM5'  # Your Arduino is on COM5
+BAUD_RATE = 9600
+
+# Global variable to track Arduino connection status
+arduino = None
+
+
+def connect_to_arduino():
+    """Attempt to connect to the Arduino"""
+    global arduino
+    try:
+        arduino = serial.Serial(ARDUINO_PORT, BAUD_RATE, timeout=1)
+        print(f"Connected to Arduino on {ARDUINO_PORT}")
+        time.sleep(2)  # Give Arduino time to reset after connection
+        return True
+    except Exception as e:
+        print(f"Failed to connect to Arduino: {e}")
+        arduino = None
+        return False
+
+
+# Try to connect to Arduino when starting the server
+connect_to_arduino()
+
+
+@app.route('/signal_arduino', methods=['POST'])
+def signal_arduino():
+    """Send signal to Arduino to open the door"""
+    global arduino
+
+    # Get command from request
+    data = request.get_json()
+    command = data.get('command')
+
+    if command != 'open_door':
+        return jsonify({'success': False, 'message': 'Invalid command'})
+
+    # Check if Arduino is connected
+    if arduino is None:
+        # Try to reconnect
+        if not connect_to_arduino():
+            return jsonify({'success': False, 'message': 'Arduino not connected'})
+
+    try:
+        # Send the 'o' character to trigger door opening in Arduino
+        arduino.write(b'o')
+        print("Signal sent to Arduino to open door")
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error communicating with Arduino: {e}")
+        # Connection might be lost, set to None to try reconnecting next time
+        arduino = None
+        return jsonify({'success': False, 'message': 'Failed to communicate with return system'})
+
+
+# Optional: Add diagnostic endpoint to list available COM ports
+@app.route('/list_ports', methods=['GET'])
+def list_ports():
+    import serial.tools.list_ports
+    ports = list(serial.tools.list_ports.comports())
+    port_list = [str(p) for p in ports]
+    return jsonify({'ports': port_list})
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
