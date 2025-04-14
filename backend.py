@@ -53,7 +53,7 @@ def close_db(exception):
 
 @app.route('/')
 def home():
-    return "LIBRARY-KIOSK is working! 🎉", 200
+     return render_template("index.html")
 
 @app.route('/test')
 def test():
